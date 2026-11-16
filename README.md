@@ -2,7 +2,7 @@
 
 PizziniMaker è un'applicazione desktop portabile per Windows 10 e Windows 11 destinata alla registrazione giornaliera delle ore lavorative. Riprende l'organizzazione e l'aspetto di un piccolo foglio di carta A6 e consente di acquisire, conservare ed esportare le attività svolte.
 
-> **Stato del progetto:** specifiche iniziali approvate. L'implementazione dell'applicazione non è ancora iniziata.
+> **Stato del progetto:** prima versione funzionante implementata, con test automatici, verifica dell'interfaccia e pubblicazione portabile.
 
 ## Obiettivi
 
@@ -204,14 +204,40 @@ Il formato definitivo dovrà mantenere facilmente riconoscibili numero di scheda
 - Aggiornare questo documento quando cambiano comportamenti, formato dati o procedura di pubblicazione.
 - Verificare ogni modifica su Windows 10 e Windows 11 prima di distribuire un nuovo pacchetto.
 
-## Prossime fasi
+## Struttura della soluzione
 
-1. Creare la soluzione WPF e il modello dati.
-2. Implementare persistenza portabile e impostazioni iniziali.
-3. Realizzare l'interfaccia A6 e l'editing delle giornate.
-4. Implementare conferma, log, avvisi e indicatori settimanali.
-5. Aggiungere i test automatici e le verifiche manuali.
-6. Pubblicare e provare il pacchetto portabile self-contained.
+```text
+src/PizziniMaker.Core/       Modelli, validazione, calendario, persistenza e log
+src/PizziniMaker.App/        Interfaccia WPF, ViewModel, tray e avvio automatico
+tests/PizziniMaker.Tests/    Test xUnit del dominio e della persistenza
+docs/GUIDA_UTENTE.md         Istruzioni incluse nel pacchetto portabile
+scripts/publish-portable.ps1 Test e pubblicazione self-contained
+```
+
+## Compilazione, test e pubblicazione
+
+È richiesto .NET 10 SDK per lo sviluppo, ma non per eseguire il pacchetto pubblicato.
+
+```powershell
+dotnet restore PizziniMaker.slnx
+dotnet build PizziniMaker.slnx
+dotnet test PizziniMaker.slnx
+powershell -ExecutionPolicy Bypass -File scripts\publish-portable.ps1
+```
+
+Lo script esegue i test e crea:
+
+- `artifacts\portable\PizziniMaker\PizziniMaker.exe`;
+- `artifacts\PizziniMaker-win-x64.zip`;
+- hash SHA-256 dello ZIP, mostrato al termine.
+
+## Possibili evoluzioni future
+
+- Esportazione mensile CSV o PDF.
+- Calendario aziendale per festività e chiusure.
+- Backup automatico pianificato su una cartella scelta dall'utente.
+- Scelta di valori massimi diversi per le ore delle singole righe.
+- Firma digitale del pacchetto per una distribuzione aziendale centralizzata.
 
 ## Riservatezza e versionamento
 

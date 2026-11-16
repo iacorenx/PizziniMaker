@@ -1,0 +1,155 @@
+﻿<Window x:Class="PizziniMaker.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PizziniMaker" Width="400" Height="560" MinWidth="380" MinHeight="520"
+        WindowStartupLocation="CenterScreen" Background="#E8E2D7"
+        FontFamily="Segoe UI" FontSize="12" Closing="Window_Closing">
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="5,3"/>
+            <Setter Property="BorderBrush" Value="#C9BDAA"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="7,4"/>
+            <Setter Property="Background" Value="#F8F3E9"/>
+            <Setter Property="BorderBrush" Value="#C9BDAA"/>
+        </Style>
+        <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="27"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="17"/>
+        </Style>
+        <Style x:Key="LinkButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Foreground" Value="#52685B"/>
+        </Style>
+    </Window.Resources>
+    <Border Margin="10" Background="#FFFDF5" BorderBrush="#D8CEBC" BorderThickness="1" CornerRadius="3">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.22" Color="#655B4C"/>
+        </Border.Effect>
+        <Grid Margin="12,9">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Dipendente: " Foreground="#756D60"/>
+                        <TextBlock Text="{Binding EmployeeName}" FontWeight="SemiBold" Foreground="#353A34"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Style="{StaticResource LinkButton}" Click="Settings_Click"
+                            ToolTip="Impostazioni" Content="⚙" FontSize="17"/>
+                </Grid>
+                <Grid Margin="0,4,0,3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Style="{StaticResource NavButton}" Content="←" Click="PreviousDay_Click" ToolTip="Giorno precedente"/>
+                    <TextBlock Grid.Column="1" Text="{Binding DateTitle}" TextAlignment="Center" VerticalAlignment="Center"
+                               FontSize="15" FontWeight="SemiBold" Foreground="#303C32"/>
+                    <Button Grid.Column="2" Style="{StaticResource NavButton}" Content="→" Click="NextDay_Click" ToolTip="Giorno successivo"/>
+                </Grid>
+                <Border HorizontalAlignment="Center" CornerRadius="8" Padding="8,2" Margin="0,1,0,3"
+                        Background="{Binding WeekBadgeBrush}"
+                        Visibility="{Binding ShowWeekStatus, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding WeekStatusText}" Foreground="{Binding WeekTextBrush}" FontWeight="SemiBold" FontSize="11"/>
+                </Border>
+                <Button Style="{StaticResource LinkButton}" Content="{Binding MissingDaysText}" Click="MissingDays_Click"
+                        Foreground="#A74716" FontWeight="SemiBold" HorizontalAlignment="Center"
+                        Visibility="{Binding HasMissingDays, Converter={StaticResource BoolToVisibility}}"/>
+                <Border Height="1" Background="#C9BDAA" Margin="0,4,0,3"/>
+            </StackPanel>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Entries}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#E1D8C8" BorderThickness="0,0,0,1" Padding="1,4,1,6">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="78"/>
+                                            <ColumnDefinition Width="25"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox ItemsSource="{Binding ActivityTypes}" DisplayMemberPath="Name"
+                                                  SelectedValuePath="Value" SelectedValue="{Binding Type}"
+                                                  IsEnabled="{Binding IsEditable}" Margin="0,0,5,0"/>
+                                        <ComboBox Grid.Column="1" ItemsSource="{Binding HourOptions}" DisplayMemberPath="Label"
+                                                  SelectedValuePath="Minutes" SelectedValue="{Binding Minutes}"
+                                                  IsEnabled="{Binding IsEditable}" Margin="0,0,5,0" ToolTip="Ore"/>
+                                        <Button Grid.Column="2" Content="×" Padding="0" Width="23" Height="25"
+                                                Click="RemoveEntry_Click" IsEnabled="{Binding IsEditable}" ToolTip="Elimina riga"/>
+                                    </Grid>
+                                    <Grid Grid.Row="1" Margin="0,5,0,0"
+                                          Visibility="{Binding IsScheda, Converter={StaticResource BoolToVisibility}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="95"/>
+                                            <ColumnDefinition Width="62"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Text="{Binding WorkCardNumber, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="4" IsEnabled="{Binding IsEditable}" Margin="0,0,6,0"
+                                                 PreviewTextInput="WorkCard_PreviewTextInput" ToolTip="Numero scheda: 4 cifre"/>
+                                        <CheckBox Grid.Column="1" Content="CAD" IsChecked="{Binding IsCad}"
+                                                  IsEnabled="{Binding IsEditable}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="2" Content="Su carta" IsChecked="{Binding IsPaperRecorded}"
+                                                  VerticalAlignment="Center" ToolTip="Segnata su scheda cartacea"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <StackPanel Grid.Row="2">
+                <Border Height="1" Background="#C9BDAA" Margin="0,2,0,5"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding TotalText}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Content="+ Riga" Click="AddEntry_Click" Padding="10,3"
+                            Visibility="{Binding IsNotConfirmed, Converter={StaticResource BoolToVisibility}}"/>
+                </Grid>
+                <TextBlock Text="{Binding ConfirmationStatusText}" Margin="0,5,0,5" Foreground="#52685B" FontSize="11"/>
+                <Button Content="Conferma giorno" Click="ConfirmDay_Click" Padding="10,6"
+                        Background="#2F6F4E" Foreground="White" BorderBrush="#2F6F4E" FontWeight="SemiBold"
+                        Visibility="{Binding IsNotConfirmed, Converter={StaticResource BoolToVisibility}}"/>
+                <Button Content="Riapri giorno per modifiche" Click="ReopenDay_Click" Padding="10,5"
+                        Background="#FFF0E5" Foreground="#8D3D12" BorderBrush="#D6A180"
+                        Visibility="{Binding IsConfirmed, Converter={StaticResource BoolToVisibility}}"/>
+                <Grid Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding PersistenceStatus}" Foreground="#7B7468" FontSize="10" TextWrapping="Wrap"/>
+                    <Button Grid.Column="1" Style="{StaticResource LinkButton}" Content="Apri log" Click="OpenLog_Click" FontSize="10"/>
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

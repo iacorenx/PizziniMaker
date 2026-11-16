@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PizziniMaker.App/PizziniMaker.App.csproj" />
+    <Project Path="src/PizziniMaker.Core/PizziniMaker.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PizziniMaker.Tests/PizziniMaker.Tests.csproj" />
+  </Folder>
+</Solution>
