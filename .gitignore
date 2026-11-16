@@ -1,0 +1,33 @@
+# Dati personali e operativi: non pubblicare mai su GitHub
+/Impostazioni.json
+/Dati/
+/Log/
+*.log
+*.bak
+*.tmp
+
+# Build .NET e pacchetti distribuibili
+bin/
+obj/
+out/
+artifacts/
+publish/
+releases/
+TestResults/
+*.nupkg
+*.snupkg
+*.zip
+
+# File locali di Visual Studio e IDE
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# File di sistema Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
