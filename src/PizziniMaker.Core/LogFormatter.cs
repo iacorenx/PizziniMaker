@@ -30,7 +30,7 @@ public static class LogFormatter
             }
             else
             {
-                builder.Append(entry.Type.ToDisplayName())
+                builder.Append(entry.GetDisplayName())
                     .Append(" - ")
                     .AppendLine(ActivityCatalog.FormatDuration(entry.Minutes));
             }
@@ -38,6 +38,11 @@ public static class LogFormatter
 
         builder.AppendLine();
         builder.AppendLine($"Totale: {ActivityCatalog.FormatDuration(day.TotalMinutes)}");
+        var overtimeMinutes = DailyHours.GetOvertimeMinutes(day);
+        if (overtimeMinutes > 0)
+        {
+            builder.AppendLine($"Straordinario: {ActivityCatalog.FormatDuration(overtimeMinutes)}");
+        }
         builder.AppendLine($"Confermato: {day.ConfirmedAt?.ToLocalTime():dd/MM/yyyy HH:mm}");
         return builder.ToString();
     }

@@ -6,7 +6,17 @@ public enum ActivityType
     Qu,
     FeriePermesso,
     Malattia,
-    Infortunio
+    Infortunio,
+    Custom
+}
+
+public sealed class CustomActivityDefinition
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    public string Name { get; set; } = string.Empty;
+
+    public string Icon { get; set; } = "📌";
 }
 
 public sealed class ActivityEntry
@@ -22,6 +32,10 @@ public sealed class ActivityEntry
     public bool IsCad { get; set; } = true;
 
     public bool IsPaperRecorded { get; set; }
+
+    public string CustomActivityName { get; set; } = string.Empty;
+
+    public string CustomActivityIcon { get; set; } = string.Empty;
 }
 
 public sealed class WorkDay
@@ -31,6 +45,8 @@ public sealed class WorkDay
     public List<ActivityEntry> Entries { get; set; } = [];
 
     public bool IsConfirmed { get; set; }
+
+    public bool AllowNonWorkingDay { get; set; }
 
     public DateTimeOffset LastModifiedAt { get; set; }
 
@@ -47,7 +63,7 @@ public sealed class WorkDay
 
 public sealed class AppSettings
 {
-    public int SchemaVersion { get; set; } = 1;
+    public int SchemaVersion { get; set; } = 2;
 
     public string EmployeeName { get; set; } = string.Empty;
 
@@ -56,4 +72,12 @@ public sealed class AppSettings
     public bool AlwaysOnTop { get; set; }
 
     public bool LaunchAtStartup { get; set; }
+
+    public List<CustomActivityDefinition> CustomActivities { get; set; } = CreateDefaultCustomActivities();
+
+    public static List<CustomActivityDefinition> CreateDefaultCustomActivities() =>
+    [
+        new() { Name = "TRASFERTA", Icon = "✈️" },
+        new() { Name = "FORMAZIONE", Icon = "🎓" }
+    ];
 }

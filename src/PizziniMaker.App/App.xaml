@@ -5,5 +5,8 @@
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <Style TargetType="{x:Type Window}">
+            <Setter Property="Icon" Value="/PizziniMaker;component/Assets/PizziniMaker.ico"/>
+        </Style>
     </Application.Resources>
 </Application>

@@ -36,11 +36,28 @@ public sealed class MainViewModel : ObservableObject
 
     public bool IsNotConfirmed => !IsConfirmed;
 
+    public bool IsDayLocked => IsNotConfirmed && ItalianHolidayCalendar.IsNonWorkingDay(CurrentDate) &&
+        !_currentDay.AllowNonWorkingDay;
+
+    public bool CanEditDay => IsNotConfirmed && !IsDayLocked;
+
+    public string NonWorkingDayMessage => CurrentDate.DayOfWeek == DayOfWeek.Sunday
+        ? "Domenica: la compilazione è bloccata. Puoi forzare l'apertura solo per questo giorno."
+        : $"{ItalianHolidayCalendar.GetHolidayName(CurrentDate)}: la compilazione della festività è bloccata.";
+
     public string ConfirmationStatusText => IsConfirmed
         ? $"✓ Giorno confermato il {_currentDay.ConfirmedAt?.ToLocalTime():dd/MM/yyyy HH:mm}"
         : "Bozza non confermata";
 
-    public string TotalText => $"Totale: {ActivityCatalog.FormatDuration(_currentDay.TotalMinutes)}";
+    public string TotalText
+    {
+        get
+        {
+            var text = $"Totale: {ActivityCatalog.FormatDuration(_currentDay.TotalMinutes)}";
+            var overtime = DailyHours.GetOvertimeMinutes(_currentDay);
+            return overtime > 0 ? $"{text} · Straordinario: {ActivityCatalog.FormatDuration(overtime)}" : text;
+        }
+    }
 
     public string LogDirectory => _store.LogDirectory;
 
@@ -117,21 +134,21 @@ public sealed class MainViewModel : ObservableObject
 
     public void AddEntry()
     {
-        if (!IsNotConfirmed)
+        if (!CanEditDay)
         {
             return;
         }
 
         var entry = new ActivityEntry();
         _currentDay.Entries.Add(entry);
-        Entries.Add(new ActivityEntryViewModel(entry, OnEntryChanged));
+        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged));
         OnPropertyChanged(nameof(TotalText));
         SaveCurrentDay();
     }
 
     public void RemoveEntry(ActivityEntryViewModel entry)
     {
-        if (!IsNotConfirmed)
+        if (!CanEditDay)
         {
             return;
         }
@@ -183,9 +200,61 @@ public sealed class MainViewModel : ObservableObject
         SaveCurrentDay();
     }
 
+    public IReadOnlyList<string> ValidateEntries()
+    {
+        var errors = WorkDayValidator.Validate(_currentDay).ToList();
+        if (IsDayLocked)
+        {
+            errors.Add("Abilitare questo giorno non lavorativo tramite la forzatura dedicata.");
+        }
+        return errors;
+    }
+
+    public DayClosureAssessment GetClosureAssessment() => DailyHours.Assess(_currentDay);
+
+    public bool CompleteDayWith(ActivityType type)
+    {
+        if (type is not ActivityType.Qu and not ActivityType.FeriePermesso)
+        {
+            throw new ArgumentException("Il completamento è consentito solo con QU o FERIE/PERMESSO.", nameof(type));
+        }
+
+        var missingMinutes = DailyHours.Assess(_currentDay).MissingMinutes;
+        if (missingMinutes == 0)
+        {
+            return true;
+        }
+
+        var entry = new ActivityEntry { Type = type, Minutes = missingMinutes, IsCad = false };
+        _currentDay.Entries.Add(entry);
+        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged));
+        OnPropertyChanged(nameof(TotalText));
+        return SaveCurrentDay();
+    }
+
+    public bool ForceNonWorkingDay()
+    {
+        if (!IsDayLocked)
+        {
+            return false;
+        }
+
+        _currentDay.AllowNonWorkingDay = true;
+        NotifyDayProperties();
+        foreach (var entry in Entries)
+        {
+            entry.SetLocked(false);
+        }
+        return SaveCurrentDay();
+    }
+
+    public MonthlyReport GetMonthlyReport(int year, int month) =>
+        MonthlySummaryService.BuildMonth(year, month, DateOnly.FromDateTime(DateTime.Today),
+            Settings.TrackingStartDate, _store.LoadExistingDay);
+
     public IReadOnlyList<string> ConfirmDay()
     {
-        var errors = WorkDayValidator.Validate(_currentDay);
+        var errors = WorkDayValidator.ValidateForConfirmation(_currentDay);
         if (errors.Count > 0)
         {
             return errors;
@@ -231,7 +300,7 @@ public sealed class MainViewModel : ObservableObject
         Settings = settings;
         OnPropertyChanged(nameof(Settings));
         OnPropertyChanged(nameof(EmployeeName));
-        RefreshCalendarStatus();
+        SetDay(_currentDay);
     }
 
     public IReadOnlyList<DateOnly> GetMissingDays() =>
@@ -244,8 +313,8 @@ public sealed class MainViewModel : ObservableObject
         Entries.Clear();
         foreach (var model in day.Entries)
         {
-            var entry = new ActivityEntryViewModel(model, OnEntryChanged);
-            entry.SetLocked(day.IsConfirmed);
+            var entry = new ActivityEntryViewModel(model, Settings.CustomActivities, OnEntryChanged);
+            entry.SetLocked(day.IsConfirmed || IsDayLocked);
             Entries.Add(entry);
         }
 
@@ -259,6 +328,9 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(DateTitle));
         OnPropertyChanged(nameof(IsConfirmed));
         OnPropertyChanged(nameof(IsNotConfirmed));
+        OnPropertyChanged(nameof(IsDayLocked));
+        OnPropertyChanged(nameof(CanEditDay));
+        OnPropertyChanged(nameof(NonWorkingDayMessage));
         OnPropertyChanged(nameof(ConfirmationStatusText));
         OnPropertyChanged(nameof(TotalText));
         PersistenceStatus = IsConfirmed ? "Giorno acquisito." : "Bozza salvata automaticamente.";
@@ -268,7 +340,7 @@ public sealed class MainViewModel : ObservableObject
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
         MissingDaysCount = _store.GetMissingWorkdays(today, Settings.TrackingStartDate).Count;
-        var status = WorkdayCalendar.EvaluateWeek(CurrentDate, today, Settings.TrackingStartDate, _store.IsConfirmed);
+        var status = WorkdayCalendar.EvaluateWeek(CurrentDate, today, Settings.TrackingStartDate, _store.IsComplete);
 
         switch (status.Kind)
         {

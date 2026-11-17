@@ -23,7 +23,7 @@ public static class WorkdayCalendar
     {
         for (var date = start; date <= end; date = date.AddDays(1))
         {
-            if (date.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday)
+            if (ItalianHolidayCalendar.IsRequiredWorkday(date))
             {
                 yield return date;
             }

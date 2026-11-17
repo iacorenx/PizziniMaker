@@ -2,7 +2,7 @@
 
 PizziniMaker è un'applicazione desktop portabile per Windows 10 e Windows 11 destinata alla registrazione giornaliera delle ore lavorative. Riprende l'organizzazione e l'aspetto di un piccolo foglio di carta A6 e consente di acquisire, conservare ed esportare le attività svolte.
 
-> **Stato del progetto:** prima versione funzionante implementata, con test automatici, verifica dell'interfaccia e pubblicazione portabile.
+> **Stato del progetto:** versione 1.1.0 implementata, con attività personalizzate, chiusura a 8 ore, calendario mensile, festività nazionali, logo dedicato e test automatici.
 
 ## Obiettivi
 
@@ -53,6 +53,9 @@ Tipi di attività supportati:
 | `FERIE/PERMESSO` | No | Sì | No | No |
 | `MALATTIA` | No | Sì | No | No |
 | `INFORTUNIO` | No | Sì | No | No |
+| Personalizzata | No | Sì | No | No |
+
+Sono incluse inizialmente `TRASFERTA` ✈️ e `FORMAZIONE` 🎓. Dalle impostazioni è possibile aggiungere, rinominare o eliminare attività personalizzate e assegnare loro un'icona. Nome e icona vengono conservati anche nella singola riga storica, così le modifiche al catalogo non alterano i giorni precedenti.
 
 Per le attività di tipo `SCHEDA`:
 
@@ -64,6 +67,9 @@ Per le attività di tipo `SCHEDA`:
 ### Conferma, blocco e riapertura
 
 - Il pulsante **Conferma giorno** valida e acquisisce le attività del giorno.
+- Sotto le 8 ore viene proposto il completamento esatto con `QU` o `FERIE/PERMESSO`; annullando la bozza resta invariata.
+- Sopra le 8 ore viene richiesta la conferma dello straordinario, indicando la durata esatta.
+- Il vincolo minimo di 8 ore è applicato anche dalla logica di persistenza, non soltanto dall'interfaccia.
 - Dopo la conferma, ore, tipi di attività, numeri di scheda e stato CAD diventano di sola lettura.
 - La riapertura delle attività richiede un comando separato e una conferma esplicita, per evitare modifiche accidentali.
 - La spunta **Segnata su scheda cartacea** resta modificabile anche dopo la conferma, senza riaprire la giornata: la registrazione cartacea può infatti avvenire successivamente.
@@ -72,8 +78,10 @@ Per le attività di tipo `SCHEDA`:
 
 ### Giorni precedenti non compilati
 
-- Vengono controllati soltanto i giorni da lunedì a venerdì.
-- Sabato, domenica e giorni futuri non vengono segnalati.
+- Vengono controllati soltanto i giorni da lunedì a venerdì che non siano festività nazionali italiane.
+- Sabato, domenica, festività nazionali e giorni futuri non vengono segnalati.
+- Domeniche e festività sono bloccate in editing fino alla forzatura esplicita della singola giornata.
+- Il calendario delle festività include le date fisse e il lunedì dell'Angelo calcolato annualmente.
 - Il controllo parte dalla data di primo utilizzo dell'applicazione, modificabile nelle impostazioni.
 - Un punto esclamativo segnala la presenza di giorni lavorativi precedenti non confermati.
 - L'indicatore consente di aprire rapidamente i giorni mancanti.
@@ -98,6 +106,14 @@ Viene mostrata una spunta verde **Settimana completa** soltanto quando tutti i g
 
 Non vengono mostrati avvisi di incompletezza.
 
+### Calendario mensile
+
+- Finestra navigabile con celle da lunedì a domenica e apertura diretta della data selezionata.
+- Verde chiaro per giorni confermati con almeno 8 ore, arancione per giorni obbligatori incompleti e numero rosso per le festività.
+- Indicatori 🏝️ per ferie/permesso, farmacia per malattia, `€€` per straordinario e icone personalizzate come ✈️ per trasferta.
+- Riepilogo di giorni e ore per ferie/permesso, malattia, straordinario e ore necessarie a completare i giorni mancanti.
+- Domeniche e festività contrassegnate con lucchetto fino alla forzatura dedicata.
+
 ## Interfaccia e grafica
 
 La finestra iniziale avrà dimensioni indicative di **400 × 560 pixel**, corrispondenti a un foglio A6 verticale con ridimensionamento standard di Windows.
@@ -110,7 +126,8 @@ Lo stile richiama un foglio di carta:
 - intestazione con dipendente, data e stato della settimana;
 - caratteri leggibili, senza simulare una grafia manoscritta;
 - elenco delle attività scorrevole quando supera lo spazio disponibile;
-- pulsante di conferma nella parte inferiore.
+- pulsante di conferma nella parte inferiore;
+- logo originale con due pizze pepperoni sovrapposte, usato per EXE, finestre e area di notifica.
 
 ## Architettura prevista
 
@@ -212,6 +229,7 @@ src/PizziniMaker.App/        Interfaccia WPF, ViewModel, tray e avvio automatico
 tests/PizziniMaker.Tests/    Test xUnit del dominio e della persistenza
 docs/GUIDA_UTENTE.md         Istruzioni incluse nel pacchetto portabile
 scripts/publish-portable.ps1 Test e pubblicazione self-contained
+scripts/create-icon.ps1       Generazione del logo PNG/ICO multiformato
 ```
 
 ## Compilazione, test e pubblicazione

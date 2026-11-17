@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using PizziniMaker.Core;
 using Application = System.Windows.Application;
 using Button = System.Windows.Controls.Button;
 using MessageBox = System.Windows.MessageBox;
@@ -52,12 +53,45 @@ public partial class MainWindow : Window
 
     private void ConfirmDay_Click(object sender, RoutedEventArgs e)
     {
-        var answer = MessageBox.Show(this,
-            "Confermi l'acquisizione delle ore di questo giorno? Le attività diventeranno di sola lettura.",
-            "Conferma giorno", MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (answer != MessageBoxResult.Yes)
+        var validationErrors = _viewModel.ValidateEntries();
+        if (validationErrors.Count > 0)
         {
+            ShowError(string.Join(Environment.NewLine, validationErrors));
             return;
+        }
+
+        var assessment = _viewModel.GetClosureAssessment();
+        if (assessment.Kind == DayClosureKind.BelowRequired)
+        {
+            var completionWindow = new CompleteDayWindow(assessment.TotalMinutes, assessment.MissingMinutes) { Owner = this };
+            if (completionWindow.ShowDialog() != true || completionWindow.SelectedActivity is not ActivityType completionType)
+            {
+                return;
+            }
+
+            if (!_viewModel.CompleteDayWith(completionType))
+            {
+                ShowError(_viewModel.LastError);
+                return;
+            }
+        }
+        else if (assessment.Kind == DayClosureKind.Overtime)
+        {
+            var overtimeWindow = new OvertimeConfirmationWindow(assessment.TotalMinutes, assessment.OvertimeMinutes) { Owner = this };
+            if (overtimeWindow.ShowDialog() != true)
+            {
+                return;
+            }
+        }
+        else
+        {
+            var answer = MessageBox.Show(this,
+                "Confermi l'acquisizione delle 8 ore di questo giorno? Le attività diventeranno di sola lettura.",
+                "Conferma giorno", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
         }
 
         var errors = _viewModel.ConfirmDay();
@@ -79,6 +113,26 @@ public partial class MainWindow : Window
         if (answer == MessageBoxResult.Yes && !_viewModel.ReopenDay())
         {
             ShowError(_viewModel.LastError);
+        }
+    }
+
+    private void ForceNonWorkingDay_Click(object sender, RoutedEventArgs e)
+    {
+        var answer = MessageBox.Show(this,
+            "Vuoi abilitare la compilazione solo per questo giorno non lavorativo? La scelta verrà salvata nella giornata.",
+            "Forza apertura giorno", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (answer == MessageBoxResult.Yes && !_viewModel.ForceNonWorkingDay())
+        {
+            ShowError(_viewModel.LastError);
+        }
+    }
+
+    private void Calendar_Click(object sender, RoutedEventArgs e)
+    {
+        var calendar = new MonthlyCalendarWindow(_viewModel) { Owner = this };
+        if (calendar.ShowDialog() == true && calendar.SelectedDate is DateOnly selectedDate)
+        {
+            ChangeDate(selectedDate);
         }
     }
 

@@ -37,7 +37,13 @@ public sealed class PizziniStore
 
     public string SettingsFilePath { get; }
 
-    public AppSettings LoadSettings() => LoadJson<AppSettings>(SettingsFilePath) ?? new AppSettings();
+    public AppSettings LoadSettings()
+    {
+        var settings = LoadJson<AppSettings>(SettingsFilePath) ?? new AppSettings();
+        settings.SchemaVersion = 2;
+        settings.CustomActivities ??= AppSettings.CreateDefaultCustomActivities();
+        return settings;
+    }
 
     public void SaveSettings(AppSettings settings)
     {
@@ -45,7 +51,47 @@ public sealed class PizziniStore
         WriteJsonAtomic(SettingsFilePath, settings);
     }
 
-    public WorkDay LoadDay(DateOnly date) => LoadJson<WorkDay>(GetDayFilePath(date)) ?? WorkDay.CreateNew(date);
+    public WorkDay LoadDay(DateOnly date) => LoadExistingDay(date) ?? WorkDay.CreateNew(date);
+
+    public WorkDay? LoadExistingDay(DateOnly date)
+    {
+        var path = GetDayFilePath(date);
+        var isLegacyFile = IsLegacyWorkDayFile(path);
+        var day = LoadJson<WorkDay>(path);
+        if (isLegacyFile && day is not null && ItalianHolidayCalendar.IsNonWorkingDay(date) &&
+            (day.IsConfirmed || day.Entries.Any(HasHistoricalContent)))
+        {
+            day.AllowNonWorkingDay = true;
+        }
+        return day;
+    }
+
+    public bool DayExists(DateOnly date) => File.Exists(GetDayFilePath(date));
+
+    private static bool IsLegacyWorkDayFile(string path)
+    {
+        foreach (var candidate in new[] { path, path + ".bak" })
+        {
+            if (!File.Exists(candidate))
+            {
+                continue;
+            }
+
+            try
+            {
+                return !File.ReadAllText(candidate).Contains("\"allowNonWorkingDay\"", StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private static bool HasHistoricalContent(ActivityEntry entry) =>
+        entry.Type != ActivityType.Scheda || entry.Minutes != 30 || !string.IsNullOrEmpty(entry.WorkCardNumber) ||
+        !entry.IsCad || entry.IsPaperRecorded || !string.IsNullOrEmpty(entry.CustomActivityName);
 
     public void SaveDay(WorkDay day)
     {
@@ -57,7 +103,7 @@ public sealed class PizziniStore
     public WorkDay ConfirmDay(DateOnly date, string employeeName)
     {
         var day = LoadDay(date);
-        var errors = WorkDayValidator.Validate(day);
+        var errors = WorkDayValidator.ValidateForConfirmation(day);
         if (errors.Count > 0)
         {
             throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
@@ -108,11 +154,11 @@ public sealed class PizziniStore
         }
 
         return WorkdayCalendar.EnumerateWorkdays(trackingStartDate, lastDate)
-            .Where(date => !LoadDay(date).IsConfirmed)
+            .Where(date => !DailyHours.IsComplete(LoadExistingDay(date)))
             .ToArray();
     }
 
-    public bool IsConfirmed(DateOnly date) => LoadDay(date).IsConfirmed;
+    public bool IsComplete(DateOnly date) => DailyHours.IsComplete(LoadExistingDay(date));
 
     public string GetLogFilePath(DateOnly date) =>
         Path.Combine(LogDirectory, date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".txt");

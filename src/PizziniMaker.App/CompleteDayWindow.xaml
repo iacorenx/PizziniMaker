@@ -1,0 +1,25 @@
+<Window x:Class="PizziniMaker.App.CompleteDayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="/PizziniMaker;component/Assets/PizziniMaker.ico"
+        Title="Completare le ore?" Width="430" Height="285" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Background="#FFF9EF" FontFamily="Segoe UI" FontSize="13">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Ore insufficienti" FontSize="21" FontWeight="SemiBold" Foreground="#8D3D12"/>
+        <TextBlock x:Name="MessageText" Grid.Row="1" Margin="0,10,0,12" TextWrapping="Wrap"/>
+        <TextBlock Grid.Row="2" TextWrapping="Wrap" Foreground="#6C665B"
+                   Text="Scegli l'attività con cui raggiungere 8 ore e chiudere il giorno, oppure annulla senza modificare la bozza."/>
+        <StackPanel Grid.Row="3">
+            <Button Content="Completa e chiudi con QU" Click="Qu_Click" Padding="10,7" Margin="0,0,0,7"
+                    Background="#2F6F4E" Foreground="White" BorderBrush="#2F6F4E"/>
+            <Button Content="Completa e chiudi con FERIE/PERMESSO" Click="Leave_Click" Padding="10,7" Margin="0,0,0,7"/>
+            <Button Content="Annulla" IsCancel="True" Padding="10,5" HorizontalAlignment="Right" Width="90"/>
+        </StackPanel>
+    </Grid>
+</Window>

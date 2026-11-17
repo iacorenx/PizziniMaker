@@ -29,11 +29,32 @@ public static class WorkDayValidator
             {
                 errors.Add($"Riga {row}: il numero di scheda deve contenere esattamente 4 cifre.");
             }
+
+            if (entry.Type == ActivityType.Custom && string.IsNullOrWhiteSpace(entry.CustomActivityName))
+            {
+                errors.Add($"Riga {row}: specificare il nome dell'attività personalizzata.");
+            }
         }
 
         if (day.TotalMinutes > MaximumDayMinutes)
         {
             errors.Add("Il totale della giornata non può superare 24 ore.");
+        }
+
+        return errors;
+    }
+
+    public static IReadOnlyList<string> ValidateForConfirmation(WorkDay day)
+    {
+        var errors = Validate(day).ToList();
+        if (day.TotalMinutes < DailyHours.RequiredMinutes)
+        {
+            errors.Add($"Per chiudere il giorno servono almeno {ActivityCatalog.FormatDuration(DailyHours.RequiredMinutes)}.");
+        }
+
+        if (ItalianHolidayCalendar.IsNonWorkingDay(day.Date) && !day.AllowNonWorkingDay)
+        {
+            errors.Add("Il giorno non lavorativo deve essere abilitato tramite la forzatura dedicata.");
         }
 
         return errors;

@@ -6,32 +6,50 @@ public sealed class ActivityEntryViewModel : ObservableObject
 {
     private readonly ActivityEntry _model;
     private readonly Action<ActivityEntryViewModel, string?> _changed;
+    private readonly List<ActivitySelection> _activityTypes;
     private bool _isLocked;
 
-    public ActivityEntryViewModel(ActivityEntry model, Action<ActivityEntryViewModel, string?> changed)
+    public ActivityEntryViewModel(
+        ActivityEntry model,
+        IEnumerable<CustomActivityDefinition> customActivities,
+        Action<ActivityEntryViewModel, string?> changed)
     {
         _model = model;
         _changed = changed;
+        _activityTypes = ActivityCatalog.GetActivityOptions(customActivities).ToList();
+        if (model.Type == ActivityType.Custom && !string.IsNullOrWhiteSpace(model.CustomActivityName) &&
+            _activityTypes.All(option => !string.Equals(option.CustomName, model.CustomActivityName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _activityTypes.Add(new ActivitySelection(
+                $"custom:{model.CustomActivityName}", ActivityType.Custom,
+                model.CustomActivityName, model.CustomActivityIcon, model.CustomActivityName));
+        }
     }
 
     public Guid Id => _model.Id;
 
-    public IReadOnlyList<ActivityTypeOption> ActivityTypes => ActivityCatalog.ActivityTypes;
+    public IReadOnlyList<ActivitySelection> ActivityTypes => _activityTypes;
 
     public IReadOnlyList<HourOption> HourOptions => ActivityCatalog.HourOptions;
 
-    public ActivityType Type
+    public ActivityType Type => _model.Type;
+
+    public string SelectedActivityKey
     {
-        get => _model.Type;
+        get => Type == ActivityType.Custom ? $"custom:{_model.CustomActivityName}" : Type.ToString();
         set
         {
-            if (_model.Type == value)
+            var selection = _activityTypes.SingleOrDefault(option =>
+                string.Equals(option.Key, value, StringComparison.OrdinalIgnoreCase));
+            if (selection is null || selection.Key.Equals(SelectedActivityKey, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            _model.Type = value;
-            if (value == ActivityType.Scheda)
+            _model.Type = selection.Type;
+            _model.CustomActivityName = selection.CustomName;
+            _model.CustomActivityIcon = selection.Type == ActivityType.Custom ? selection.Icon : string.Empty;
+            if (selection.Type == ActivityType.Scheda)
             {
                 _model.IsCad = true;
             }
@@ -43,6 +61,7 @@ public sealed class ActivityEntryViewModel : ObservableObject
             }
 
             OnPropertyChanged();
+            OnPropertyChanged(nameof(Type));
             OnPropertyChanged(nameof(IsScheda));
             OnPropertyChanged(nameof(WorkCardNumber));
             OnPropertyChanged(nameof(IsCad));

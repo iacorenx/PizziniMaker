@@ -35,7 +35,7 @@ public sealed class PizziniStoreTests : IDisposable
         var date = new DateOnly(2026, 11, 16);
         var day = WorkDay.CreateNew(date);
         day.Entries[0].WorkCardNumber = "8000";
-        day.Entries[0].Minutes = 240;
+        day.Entries[0].Minutes = 480;
         _store.SaveDay(day);
 
         var confirmed = _store.ConfirmDay(date, "Mario Rossi");
@@ -46,7 +46,7 @@ public sealed class PizziniStoreTests : IDisposable
         Assert.True(_store.LoadDay(date).IsConfirmed);
         Assert.Contains("Carta: no", logBefore);
         Assert.Contains("Carta: sì", logAfter);
-        Assert.Contains("8000 - 4 ore (CAD)", logAfter);
+        Assert.Contains("8000 - 8 ore (CAD)", logAfter);
     }
 
     [Fact]
@@ -55,6 +55,7 @@ public sealed class PizziniStoreTests : IDisposable
         var date = new DateOnly(2026, 11, 16);
         var day = WorkDay.CreateNew(date);
         day.Entries[0].WorkCardNumber = "8000";
+        day.Entries[0].Minutes = 480;
         _store.SaveDay(day);
         _store.ConfirmDay(date, "Dipendente");
 
@@ -102,6 +103,63 @@ public sealed class PizziniStoreTests : IDisposable
 
         Assert.Throws<InvalidOperationException>(() => _store.ConfirmDay(date, "Dipendente"));
         Assert.False(File.Exists(_store.GetLogFilePath(date)));
+    }
+
+    [Fact]
+    public void LessThanEightHours_CannotBeConfirmedEvenWithValidCard()
+    {
+        var date = new DateOnly(2026, 11, 16);
+        var day = WorkDay.CreateNew(date);
+        day.Entries[0].WorkCardNumber = "8000";
+        day.Entries[0].Minutes = 240;
+        _store.SaveDay(day);
+
+        Assert.Throws<InvalidOperationException>(() => _store.ConfirmDay(date, "Dipendente"));
+        Assert.False(_store.LoadDay(date).IsConfirmed);
+    }
+
+    [Fact]
+    public void OldSettings_GetDefaultCustomActivities()
+    {
+        File.WriteAllText(_store.SettingsFilePath,
+            "{\"schemaVersion\":1,\"employeeName\":\"Dipendente\",\"trackingStartDate\":\"2026-01-01\"}");
+
+        var settings = _store.LoadSettings();
+
+        Assert.Equal(2, settings.SchemaVersion);
+        Assert.Contains(settings.CustomActivities, activity => activity.Name == "TRASFERTA");
+    }
+
+    [Fact]
+    public void HistoricalSundayContent_EnablesExistingDayButEmptyDraftRemainsLocked()
+    {
+        var sunday = new DateOnly(2026, 11, 15);
+        var historical = WorkDay.CreateNew(sunday);
+        historical.Entries[0].WorkCardNumber = "8000";
+        historical.Entries[0].Minutes = 480;
+        _store.SaveDay(historical);
+        var path = Path.Combine(_store.DataDirectory, "2026-11-15.json");
+        var legacyJson = File.ReadAllText(path).Replace("\"allowNonWorkingDay\": false,", string.Empty);
+        File.WriteAllText(path, legacyJson);
+
+        Assert.True(_store.LoadDay(sunday).AllowNonWorkingDay);
+
+        var followingSunday = new DateOnly(2026, 11, 22);
+        _store.SaveDay(WorkDay.CreateNew(followingSunday));
+        Assert.False(_store.LoadDay(followingSunday).AllowNonWorkingDay);
+    }
+
+    [Fact]
+    public void Sunday_CannotBeConfirmedWithoutStoredOverride()
+    {
+        var sunday = new DateOnly(2026, 11, 15);
+        var day = WorkDay.CreateNew(sunday);
+        day.Entries[0].WorkCardNumber = "8000";
+        day.Entries[0].Minutes = 480;
+        _store.SaveDay(day);
+
+        Assert.Throws<InvalidOperationException>(() => _store.ConfirmDay(sunday, "Dipendente"));
+        Assert.False(_store.LoadDay(sunday).AllowNonWorkingDay);
     }
 
     public void Dispose()

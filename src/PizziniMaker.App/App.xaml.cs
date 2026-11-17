@@ -17,6 +17,7 @@ public partial class App : WpfApplication
     private MainViewModel _viewModel = null!;
     private MainWindow _mainWindow = null!;
     private NotifyIcon? _notifyIcon;
+    private System.Drawing.Icon? _applicationIcon;
 
     public bool IsExiting { get; private set; }
 
@@ -81,6 +82,7 @@ public partial class App : WpfApplication
 
     public void ShowSettings(Window owner)
     {
+        _viewModel.SaveCurrentDay();
         var settingsWindow = new SettingsWindow(_settings, false) { Owner = owner };
         if (settingsWindow.ShowDialog() != true || !SaveSettings(owner))
         {
@@ -138,6 +140,7 @@ public partial class App : WpfApplication
             _singleInstanceMutex.ReleaseMutex();
         }
         _singleInstanceMutex?.Dispose();
+        _applicationIcon?.Dispose();
         base.OnExit(e);
     }
 
@@ -159,6 +162,13 @@ public partial class App : WpfApplication
 
     private void InitializeTrayIcon()
     {
+        var iconResource = WpfApplication.GetResourceStream(new Uri("pack://application:,,,/Assets/PizziniMaker.ico"))
+            ?? throw new InvalidOperationException("Icona dell'applicazione non trovata.");
+        using (iconResource.Stream)
+        {
+            _applicationIcon = new System.Drawing.Icon(iconResource.Stream, 32, 32);
+        }
+
         var menu = new ContextMenuStrip();
         menu.Items.Add("Apri PizziniMaker", null, (_, _) => Dispatcher.Invoke(ShowMainWindow));
         menu.Items.Add("Apri cartella log", null, (_, _) => Dispatcher.Invoke(OpenLogFolder));
@@ -167,7 +177,7 @@ public partial class App : WpfApplication
 
         _notifyIcon = new NotifyIcon
         {
-            Icon = System.Drawing.SystemIcons.Information,
+            Icon = _applicationIcon,
             Text = "PizziniMaker - Registro ore",
             Visible = true,
             ContextMenuStrip = menu

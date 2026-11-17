@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PizziniMaker.Core\PizziniMaker.Core.csproj" />
+    <Resource Include="Assets\PizziniMaker.ico" />
+    <Resource Include="Assets\PizziniMaker.png" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -12,8 +14,10 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>PizziniMaker</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Description>Registro giornaliero portabile delle ore lavorative.</Description>
+    <ApplicationIcon>Assets\PizziniMaker.ico</ApplicationIcon>
   </PropertyGroup>
 
 </Project>

@@ -5,19 +5,19 @@
 PizziniMaker non richiede installazione né runtime aggiuntivi.
 
 1. Estrarre `PizziniMaker-win-x64.zip` in una cartella scrivibile, ad esempio `Documenti\PizziniMaker`.
-2. Avviare `PizziniMaker.exe`.
+2. Avviare `PizziniMaker.exe` con l'icona delle due pizze.
 3. Al primo avvio inserire il nome del dipendente e la data dalla quale controllare i giorni mancanti.
-4. Per spostare il programma su un altro PC, chiuderlo dall'icona nell'area di notifica e copiare l'intera cartella `PizziniMaker`.
+4. Per spostare il programma, chiuderlo dal menu dell'icona nell'area di notifica e copiare l'intera cartella.
 
 Nella cartella vengono creati:
 
-- `Impostazioni.json`: nome e preferenze;
+- `Impostazioni.json`: nome, preferenze e attività personalizzate;
 - `Dati`: bozze e giornate confermate;
 - `Log`: riepiloghi testuali dei giorni confermati.
 
-Copiare periodicamente l'intera cartella per avere una copia di sicurezza. I file `.bak` sono copie di sicurezza automatiche della versione precedente.
+Copiare periodicamente l'intera cartella per avere una copia di sicurezza. I file `.bak` contengono la versione precedente dei dati.
 
-## Compilazione del giorno
+## Attività e compilazione del giorno
 
 - Usare **←** e **→** per cambiare giorno.
 - Selezionare il tipo di attività e le ore; ogni intervallo è di 30 minuti.
@@ -25,37 +25,56 @@ Copiare periodicamente l'intera cartella per avere una copia di sicurezza. I fil
 - **CAD** è attivo inizialmente e può essere deselezionato.
 - **Su carta** indica che l'attività è stata riportata anche sulla scheda cartacea.
 - Usare **+ Riga** per aggiungere attività e **×** per eliminarne una.
-- Le bozze vengono salvate automaticamente.
+- Le bozze vengono salvate automaticamente, anche quando contengono meno di 8 ore.
 
-## Conferma e modifiche
+Sono disponibili inizialmente **TRASFERTA ✈️** e **FORMAZIONE 🎓**. Da **Impostazioni → Gestisci attività personalizzate** è possibile aggiungere, modificare o eliminare altre attività e scegliere la relativa icona. Le modifiche al catalogo non alterano le attività già salvate nei giorni precedenti.
 
-**Conferma giorno** valida i dati, blocca le attività e crea il file `Log\AAAA-MM-GG.txt`.
+## Chiusura a 8 ore e straordinario
 
-Per modificare ore, attività o numeri di scheda usare **Riapri giorno per modifiche**. La riapertura richiede conferma e rimuove il log precedente, che sarà ricreato alla nuova conferma.
+Il pulsante **Conferma giorno** valida i dati, blocca le attività e crea `Log\AAAA-MM-GG.txt`.
 
-La spunta **Su carta** resta invece modificabile anche dopo la conferma e aggiorna subito il log, senza riaprire il giorno.
+- Con **meno di 8 ore**, il programma indica la durata mancante e chiede se completare e chiudere con **QU** o **FERIE/PERMESSO**. La riga viene aggiunta con la durata esatta necessaria. **Annulla** lascia la bozza invariata.
+- Con **esattamente 8 ore**, viene richiesta la conferma normale.
+- Con **più di 8 ore**, viene indicata la quantità di straordinario. La chiusura avviene solo dopo conferma; **Annulla** lascia il giorno aperto.
+
+Il log riporta totale ed eventuale straordinario. Per modificare ore, attività o numeri di scheda dopo la chiusura usare **Riapri giorno per modifiche**. La riapertura rimuove il log precedente, ricreato alla nuova conferma.
+
+La spunta **Su carta** resta modificabile anche dopo la conferma e aggiorna subito il log senza riaprire il giorno.
+
+## Calendario mensile
+
+Il pulsante **📅** apre il calendario del mese visualizzato. È possibile cambiare mese e selezionare una data per aprirla nel foglio.
+
+- **Verde chiaro:** giorno confermato con almeno 8 ore.
+- **Arancione:** giorno lavorativo precedente incompleto.
+- **Numero rosso:** festività nazionale.
+- **Bordo blu:** giorno corrente.
+- **🔒:** domenica o festività che richiede forzatura.
+
+Le celle possono mostrare 🏝️ per ferie/permesso, il simbolo della farmacia per malattia, `€€` per straordinario, ✈️ per trasferta e le icone delle altre attività personalizzate.
+
+Il riepilogo inferiore indica giorni e ore di ferie/permesso e malattia, giorni e ore di straordinario, giorni da completare e ore necessarie. Il giorno corrente e quelli futuri non vengono contati tra i giorni mancanti.
+
+## Domeniche e festività nazionali
+
+Domeniche e festività nazionali italiane, incluso il lunedì dell'Angelo, sono escluse dagli obblighi di compilazione e inizialmente non sono editabili.
+
+Per registrarvi attività usare **Forza apertura solo per questo giorno** e confermare. La forzatura vale soltanto per la data selezionata e viene salvata nella giornata. Il sabato resta normalmente editabile ma non è un giorno obbligatorio.
 
 ## Settimane e giorni mancanti
 
-- **✓ Settimana in pari**: nella settimana corrente tutti i giorni lavorativi precedenti a oggi sono confermati. Oggi e i giorni futuri non sono richiesti.
-- **✓ Settimana completa**: in una settimana precedente tutti i giorni da lunedì a venerdì sono confermati.
-- **! Settimana incompleta**: manca almeno un giorno richiesto.
+- **✓ Settimana in pari**: tutti i giorni lavorativi precedenti a oggi sono confermati con almeno 8 ore.
+- **✓ Settimana completa**: in una settimana precedente tutti i giorni richiesti da lunedì a venerdì sono confermati.
+- **! Settimana incompleta**: manca almeno un giorno richiesto o è inferiore a 8 ore.
 - Il pulsante con il punto esclamativo apre l'elenco dei giorni precedenti da compilare.
 
-Sabati, domeniche, giorni futuri e date precedenti all'inizio controllo non vengono segnalati.
+Sabati, domeniche, festività nazionali, giorni futuri e date precedenti all'inizio controllo non vengono segnalati.
 
 ## Area di notifica e avvio automatico
 
-La chiusura della finestra con **X** la nasconde ma lascia PizziniMaker disponibile accanto all'orologio. Fare doppio clic sull'icona per riaprirla. Per chiudere completamente il programma usare **Esci** nel menu dell'icona.
+La chiusura della finestra con **X** la nasconde ma lascia PizziniMaker disponibile accanto all'orologio. Fare doppio clic sull'icona delle pizze per riaprirlo. Per chiudere completamente usare **Esci** nel menu dell'icona.
 
-Nelle impostazioni è possibile:
-
-- cambiare il nome del dipendente;
-- cambiare la data di inizio controllo;
-- mantenere la finestra sempre in primo piano;
-- attivare o disattivare l'avvio con Windows.
-
-Se la cartella viene spostata, all'avvio successivo PizziniMaker aggiorna automaticamente il percorso di avvio con Windows quando questa opzione è attiva.
+Nelle impostazioni è possibile cambiare dipendente, data di inizio controllo, attività personalizzate, modalità sempre in primo piano e avvio con Windows. Se la cartella viene spostata, all'avvio successivo il percorso di avvio automatico viene aggiornato quando questa opzione è attiva.
 
 ## Privacy
 
