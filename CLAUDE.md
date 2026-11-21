@@ -34,7 +34,7 @@ Per provare l'app senza toccare dati reali: compilare con `-o <cartella temporan
 - **Importazione**: fusione non distruttiva. Con la stessa data resta la giornata attuale. Un log viene copiato **solo insieme alla sua giornata importata**, perché il log è sempre derivato dalla giornata e copiarlo da solo creerebbe incoerenze. Backup ZIP prima di scrivere; la cartella di origine viene solo letta.
 - **Trasferta**: è una qualifica della giornata (`WorkDay.IsTrasferta`, pernotto fuori sede), non un'attività con ore. La vecchia attività personalizzata TRASFERTA viene rimossa dalla migrazione allo schema 3; le giornate storiche con quella riga restano invariate.
 - **Sabato**: facoltativo, nessun minimo di 8 ore e nessuna proposta di completamento; tutte le ore non di viaggio sono straordinario. Vale solo per il sabato, non per domeniche o festività forzate.
-- **Viaggio**: contabilità separata, mai straordinario. Nei feriali conta per le 8 ore e straordinario = ore non di viaggio oltre le 8. ⚠ Questa regola sui feriali è un'ipotesi dello sviluppo **non ancora confermata** dall'utente.
+- **Viaggio**: contabilità separata, mai straordinario. Nei feriali conta per le 8 ore e straordinario = ore non di viaggio oltre le 8 (es. 7 h schede + 3 h viaggio → 0 straordinario). Regola confermata dall'utente.
 
 ## Da verificare
 
