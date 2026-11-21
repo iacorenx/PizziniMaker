@@ -10,14 +10,24 @@ public static class LogFormatter
         var builder = new StringBuilder();
         builder.AppendLine($"Dipendente: {employeeName.Trim()}");
         builder.AppendLine($"Giorno: {ActivityCatalog.FormatDate(day.Date)}");
+        if (day.IsTrasferta)
+        {
+            builder.AppendLine("Trasferta: sì");
+        }
         builder.AppendLine();
 
         foreach (var entry in day.Entries)
         {
             if (entry.Type == ActivityType.Scheda)
             {
-                builder.Append(entry.WorkCardNumber)
-                    .Append(" - ")
+                builder.Append(entry.WorkCardNumber);
+                var comment = entry.WorkCardComment?.Trim();
+                if (!string.IsNullOrEmpty(comment))
+                {
+                    builder.Append(" - ").Append(comment);
+                }
+
+                builder.Append(" - ")
                     .Append(ActivityCatalog.FormatDuration(entry.Minutes));
 
                 if (entry.IsCad)
@@ -42,6 +52,11 @@ public static class LogFormatter
         if (overtimeMinutes > 0)
         {
             builder.AppendLine($"Straordinario: {ActivityCatalog.FormatDuration(overtimeMinutes)}");
+        }
+        var travelMinutes = DailyHours.GetTravelMinutes(day);
+        if (travelMinutes > 0)
+        {
+            builder.AppendLine($"Viaggio: {ActivityCatalog.FormatDuration(travelMinutes)}");
         }
         builder.AppendLine($"Confermato: {day.ConfirmedAt?.ToLocalTime():dd/MM/yyyy HH:mm}");
         return builder.ToString();

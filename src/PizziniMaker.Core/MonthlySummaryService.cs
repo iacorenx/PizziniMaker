@@ -14,7 +14,9 @@ public sealed record MonthlyDayInfo(
     bool IsToday,
     int TotalMinutes,
     int OvertimeMinutes,
-    IReadOnlyList<string> Icons);
+    IReadOnlyList<string> Icons,
+    int TravelMinutes = 0,
+    bool IsTrasferta = false);
 
 public sealed record MonthlyReport(
     int Year,
@@ -27,7 +29,10 @@ public sealed record MonthlyReport(
     int OvertimeDays,
     int OvertimeMinutes,
     int MissingDays,
-    int MissingMinutes);
+    int MissingMinutes,
+    int TravelDays = 0,
+    int TravelMinutes = 0,
+    int TrasfertaDays = 0);
 
 public static class MonthlySummaryService
 {
@@ -49,6 +54,9 @@ public static class MonthlySummaryService
         var overtimeMinutes = 0;
         var missingDays = 0;
         var missingMinutes = 0;
+        var travelDays = 0;
+        var travelMinutes = 0;
+        var trasfertaDays = 0;
 
         for (var date = firstDay; date.Month == month; date = date.AddDays(1))
         {
@@ -59,6 +67,7 @@ public static class MonthlySummaryService
             var overtime = day?.IsConfirmed == true ? DailyHours.GetOvertimeMinutes(day) : 0;
             var holidayName = ItalianHolidayCalendar.GetHolidayName(date);
             var icons = GetIcons(day, overtime);
+            var dayTravelMinutes = DailyHours.GetTravelMinutes(day);
 
             days.Add(new MonthlyDayInfo(
                 date,
@@ -74,7 +83,9 @@ public static class MonthlySummaryService
                 date == today,
                 day?.TotalMinutes ?? 0,
                 overtime,
-                icons));
+                icons,
+                dayTravelMinutes,
+                day?.IsTrasferta == true));
 
             if (isIncomplete)
             {
@@ -104,10 +115,20 @@ public static class MonthlySummaryService
                 overtimeDays++;
                 overtimeMinutes += overtime;
             }
+            if (dayTravelMinutes > 0)
+            {
+                travelDays++;
+                travelMinutes += dayTravelMinutes;
+            }
+            if (day.IsTrasferta)
+            {
+                trasfertaDays++;
+            }
         }
 
         return new MonthlyReport(year, month, days, leaveDays, leaveMinutes, sickDays,
-            sickMinutes, overtimeDays, overtimeMinutes, missingDays, missingMinutes);
+            sickMinutes, overtimeDays, overtimeMinutes, missingDays, missingMinutes,
+            travelDays, travelMinutes, trasfertaDays);
     }
 
     private static int GetMinutes(WorkDay day, ActivityType type) =>
@@ -132,6 +153,14 @@ public static class MonthlySummaryService
         if (overtime > 0)
         {
             icons.Add("€€");
+        }
+        if (day.Entries.Any(entry => entry.Type == ActivityType.Viaggio))
+        {
+            icons.Add(ActivityCatalog.TravelIcon);
+        }
+        if (day.IsTrasferta)
+        {
+            icons.Add(ActivityCatalog.TrasfertaIcon);
         }
         icons.AddRange(day.Entries
             .Where(entry => entry.Type == ActivityType.Custom)

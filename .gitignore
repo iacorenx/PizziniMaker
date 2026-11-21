@@ -2,6 +2,8 @@
 /Impostazioni.json
 /Dati/
 /Log/
+/StoricoSchede.json
+/Backup/
 *.log
 *.bak
 *.tmp

@@ -14,7 +14,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>PizziniMaker</AssemblyName>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Description>Registro giornaliero portabile delle ore lavorative.</Description>
     <ApplicationIcon>Assets\PizziniMaker.ico</ApplicationIcon>

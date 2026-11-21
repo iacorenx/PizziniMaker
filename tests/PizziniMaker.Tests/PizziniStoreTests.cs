@@ -126,8 +126,108 @@ public sealed class PizziniStoreTests : IDisposable
 
         var settings = _store.LoadSettings();
 
-        Assert.Equal(2, settings.SchemaVersion);
-        Assert.Contains(settings.CustomActivities, activity => activity.Name == "TRASFERTA");
+        Assert.Equal(3, settings.SchemaVersion);
+        Assert.Contains(settings.CustomActivities, activity => activity.Name == "FORMAZIONE");
+        Assert.DoesNotContain(settings.CustomActivities, activity => activity.Name == "TRASFERTA");
+    }
+
+    [Fact]
+    public void SettingsV2_MigrationRemovesTransferActivityButKeepsOthers()
+    {
+        File.WriteAllText(_store.SettingsFilePath,
+            "{\"schemaVersion\":2,\"employeeName\":\"Dipendente\",\"trackingStartDate\":\"2026-01-01\"," +
+            "\"customActivities\":[{\"name\":\"TRASFERTA\",\"icon\":\"✈️\"},{\"name\":\"CANTIERE\",\"icon\":\"🛠️\"}]}");
+
+        var settings = _store.LoadSettings();
+
+        Assert.Equal(3, settings.SchemaVersion);
+        Assert.Equal(["CANTIERE"], settings.CustomActivities.Select(activity => activity.Name));
+    }
+
+    [Fact]
+    public void LegacyDayWithTransferRow_IsLoadedUnchanged()
+    {
+        var date = new DateOnly(2026, 11, 16);
+        Directory.CreateDirectory(_store.DataDirectory);
+        File.WriteAllText(Path.Combine(_store.DataDirectory, "2026-11-16.json"),
+            "{\"date\":\"2026-11-16\",\"isConfirmed\":true,\"allowNonWorkingDay\":false,\"entries\":[" +
+            "{\"type\":5,\"minutes\":480,\"customActivityName\":\"TRASFERTA\",\"customActivityIcon\":\"✈️\"}]}");
+
+        var day = _store.LoadDay(date);
+
+        Assert.Equal(480, day.TotalMinutes);
+        Assert.Equal("TRASFERTA", day.Entries[0].CustomActivityName);
+        Assert.False(day.IsTrasferta);
+        Assert.Equal(string.Empty, day.Entries[0].WorkCardComment);
+    }
+
+    [Fact]
+    public void WorkCardComment_IsPersistedAndWrittenToLog()
+    {
+        var date = new DateOnly(2026, 11, 16);
+        var day = WorkDay.CreateNew(date);
+        day.Entries[0].WorkCardNumber = "8092";
+        day.Entries[0].WorkCardComment = "Baccane";
+        day.Entries[0].Minutes = 480;
+        _store.SaveDay(day);
+
+        _store.ConfirmDay(date, "Dipendente");
+
+        Assert.Equal("Baccane", new PizziniStore(_root).LoadDay(date).Entries[0].WorkCardComment);
+        Assert.Contains("8092 - Baccane - 8 ore (CAD) - Carta: no", File.ReadAllText(_store.GetLogFilePath(date)));
+    }
+
+    [Fact]
+    public void ConfirmDay_UpdatesWorkCardHistory()
+    {
+        var date = new DateOnly(2026, 11, 16);
+        var day = WorkDay.CreateNew(date);
+        day.Entries[0].WorkCardNumber = "8092";
+        day.Entries[0].WorkCardComment = "Baccane";
+        day.Entries[0].Minutes = 480;
+        _store.SaveDay(day);
+
+        _store.ConfirmDay(date, "Dipendente");
+        var history = _store.LoadHistory();
+
+        Assert.NotNull(history);
+        var entry = Assert.Single(history.Entries);
+        Assert.Equal("8092", entry.Number);
+        Assert.Equal("Baccane", entry.Comment);
+        Assert.Equal(date, entry.LastUsed);
+    }
+
+    [Fact]
+    public void MissingHistory_IsRebuiltFromConfirmedDays()
+    {
+        var day = WorkDay.CreateNew(new DateOnly(2026, 11, 16));
+        day.Entries[0].WorkCardNumber = "1234";
+        day.Entries[0].WorkCardComment = "Officina";
+        day.IsConfirmed = true;
+        _store.SaveDay(day);
+        var draft = WorkDay.CreateNew(new DateOnly(2026, 11, 17));
+        draft.Entries[0].WorkCardNumber = "9999";
+        _store.SaveDay(draft);
+
+        var history = _store.LoadOrRebuildHistory();
+
+        Assert.Equal(["1234"], history.Entries.Select(entry => entry.Number));
+        Assert.True(File.Exists(_store.HistoryFilePath));
+    }
+
+    [Fact]
+    public void SaturdayBelowEightHours_CanBeConfirmed()
+    {
+        var saturday = new DateOnly(2026, 11, 14);
+        var day = WorkDay.CreateNew(saturday);
+        day.Entries[0].WorkCardNumber = "8000";
+        day.Entries[0].Minutes = 240;
+        _store.SaveDay(day);
+
+        var confirmed = _store.ConfirmDay(saturday, "Dipendente");
+
+        Assert.True(confirmed.IsConfirmed);
+        Assert.Contains("Straordinario: 4 ore", File.ReadAllText(_store.GetLogFilePath(saturday)));
     }
 
     [Fact]

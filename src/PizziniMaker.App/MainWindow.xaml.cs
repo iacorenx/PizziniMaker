@@ -75,9 +75,9 @@ public partial class MainWindow : Window
                 return;
             }
         }
-        else if (assessment.Kind == DayClosureKind.Overtime)
+        else if (assessment.Kind is DayClosureKind.Overtime or DayClosureKind.OptionalDay)
         {
-            var overtimeWindow = new OvertimeConfirmationWindow(assessment.TotalMinutes, assessment.OvertimeMinutes) { Owner = this };
+            var overtimeWindow = new OvertimeConfirmationWindow(assessment) { Owner = this };
             if (overtimeWindow.ShowDialog() != true)
             {
                 return;
@@ -85,8 +85,12 @@ public partial class MainWindow : Window
         }
         else
         {
+            var travelText = assessment.TravelMinutes > 0
+                ? $" (di cui {ActivityCatalog.FormatDuration(assessment.TravelMinutes)} di viaggio)"
+                : string.Empty;
             var answer = MessageBox.Show(this,
-                "Confermi l'acquisizione delle 8 ore di questo giorno? Le attività diventeranno di sola lettura.",
+                $"Confermi l'acquisizione di {ActivityCatalog.FormatDuration(assessment.TotalMinutes)}{travelText} per questo giorno? " +
+                "Le attività diventeranno di sola lettura.",
                 "Conferma giorno", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (answer != MessageBoxResult.Yes)
             {
@@ -160,6 +164,70 @@ public partial class MainWindow : Window
 
     private void WorkCard_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
         e.Handled = !e.Text.All(char.IsAsciiDigit);
+
+    private void Comment_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ActivityEntryViewModel entry })
+        {
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case Key.Down:
+                entry.MoveSuggestionSelection(1);
+                e.Handled = true;
+                break;
+            case Key.Up:
+                entry.MoveSuggestionSelection(-1);
+                e.Handled = true;
+                break;
+            case Key.Enter:
+                e.Handled = entry.ApplySelectedSuggestion();
+                break;
+            case Key.Tab:
+                // Tab applica il suggerimento evidenziato ma lascia proseguire il cambio di campo.
+                entry.ApplySelectedSuggestion();
+                break;
+            case Key.Escape:
+                if (entry.IsSuggestionOpen)
+                {
+                    entry.CloseSuggestions();
+                    e.Handled = true;
+                }
+                break;
+        }
+    }
+
+    private void Comment_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ActivityEntryViewModel entry })
+        {
+            entry.CloseSuggestions();
+        }
+    }
+
+    private void Suggestion_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ListBoxItem { DataContext: WorkCardHistoryEntry suggestion } item &&
+            ItemsControl.ItemsControlFromItemContainer(item)?.DataContext is ActivityEntryViewModel entry)
+        {
+            entry.ApplySuggestion(suggestion);
+            e.Handled = true;
+        }
+    }
+
+    private void CloseAllSuggestions()
+    {
+        foreach (var entry in _viewModel.Entries)
+        {
+            entry.CloseSuggestions();
+        }
+    }
+
+    private void Window_LocationChanged(object? sender, EventArgs e) => CloseAllSuggestions();
+
+    private void Window_Deactivated(object? sender, EventArgs e) => CloseAllSuggestions();
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {

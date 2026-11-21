@@ -1,51 +1,48 @@
-# Rapporto di verifica - PizziniMaker 1.1.0
+# Rapporto di verifica - PizziniMaker 1.2.0
 
-Data: 16/11/2026
+Data: 21/11/2026
 
 ## Ambiente
 
 - Windows 10, versione sistema 10.0.19045.
 - .NET SDK 10.0.404.
 - Target applicazione: `net10.0-windows`, pubblicazione `win-x64` self-contained.
-- Versione file e prodotto: `1.1.0.0` / `1.1.0`.
+- Versione file e prodotto: `1.2.0.0` / `1.2.0`.
 
 ## Verifiche automatiche
 
-- Compilazione Debug e Release completata senza errori.
-- **57 test xUnit superati**, nessun test fallito o ignorato.
-- Numeri di scheda, zeri iniziali, mezz'ore e limiti giornalieri.
-- Completamento a 8 ore, rifiuto delle conferme insufficienti e calcolo dello straordinario.
-- Attività personalizzate, nomi nei log e catalogo iniziale TRASFERTA/FORMAZIONE.
-- Festività fisse e Pasqua/lunedì dell'Angelo per più anni.
-- Esclusione di weekend, festività, giorni futuri e date precedenti all'inizio controllo.
-- Blocco delle domeniche senza forzatura e migrazione dei soli JSON legacy.
-- Stati, icone, giorni e ore dei riepiloghi mensili.
-- Persistenza, conferma, riapertura, recupero da backup e aggiornamento del log cartaceo.
+- Compilazione Debug e Release completata senza errori né avvisi.
+- **88 test xUnit superati**, nessun test fallito o ignorato.
+- Storico schede: `Bac` → `8092 Baccane`, ricerca per numero senza distinzione tra maiuscole e minuscole, ordinamento per pertinenza e poi per uso recente, un commento per numero, fusione e ricostruzione dalle giornate confermate.
+- Commenti: persistenza nella giornata, scrittura nel log (`8092 - Baccane - 8 ore (CAD) - Carta: no`), compatibilità con i JSON 1.1.0 privi del campo, storico aggiornato alla conferma.
+- Viaggio: conta per le 8 ore, non diventa straordinario, riga `Viaggio:` nel log e totali mensili.
+- Sabato: confermabile sotto le 8 ore, ore non di viaggio interamente straordinario, giorno completo in calendario.
+- Trasferta: riga `Trasferta: sì` nel log, giorni contati nel riepilogo mensile, migrazione delle impostazioni v2 → v3 che rimuove la voce TRASFERTA e giornate storiche con riga TRASFERTA invariate.
+- Importazione: giornate assenti importate, conflitti con giornata attuale mantenuta, log solo per giornate importate, recupero da `.bak`, JSON corrotti e nomi non validi segnalati, backup ZIP, cartella di origine non modificata, impostazioni importate solo su richiesta, rifiuto della cartella in esecuzione e di cartelle annidate, selezione della sottocartella `Dati` accettata.
+- Restano superati i test della 1.1.0: numeri di scheda, completamento a 8 ore, festività, giorni mancanti, calendario, persistenza e recupero da backup.
 
 ## Verifica dell'interfaccia
 
-- Applicazione avviata realmente con finestra A6 di **400 × 560 pixel**.
-- Completamento tramite UI da 7,5 a 8 ore con riga `QU - 0,5 ore` e giorno confermato.
-- Conferma di 8,5 ore con avviso e log `Straordinario: 0,5 ore`.
-- Selezione di TRASFERTA e log con nome personalizzato e 8 ore.
-- Aggiunta tramite impostazioni di `CORSO SICUREZZA 💼`, salvata correttamente in JSON.
-- Calendario verificato con giorni verdi/arancioni, domeniche bloccate e simboli `€€`, ✈️, 🏝️ e farmacia.
-- Domenica inizialmente non editabile; dopo la forzatura controlli attivi e campo persistente.
-- Opzione **Avvia PizziniMaker con Windows** interamente visibile nella schermata impostazioni.
-- Riepiloghi mensili verificati: ferie, malattia, straordinario, giorni mancanti e ore necessarie.
+Applicazione avviata realmente (sabato 21/11/2026) in una cartella di prova con dati 1.1.0 simulati.
+
+- Finestra principale da **410 × 620 pixel**: casella **🧳 Trasferta**, avviso del sabato facoltativo, riga Scheda con campo **Commento** e totali con straordinario/viaggio su righe separate.
+- Digitando `bac` compaiono `8100 — Baccane cantiere nord` e `8092 — Baccane` (più recente prima); con **↓** e **Invio** la riga diventa `8092` / `Baccane` ed è salvata nel JSON.
+- Conferma del sabato con 0,5 ore: finestra **Sabato facoltativo** senza proposta di completamento; log con `Straordinario: 0,5 ore`.
+- Impostazioni: voce TRASFERTA rimossa dal catalogo; riquadri **Storico schede** e **Versione precedente** visibili.
+- Gestione storico: elenco ordinato per ultimo uso, con commento e numero di utilizzi.
+- Importazione da cartella 1.1.0: anteprima con 2 giornate nuove, 1 conflitto mantenuto, 1 log, 1 scheda nuova e 1 file corrotto ignorato; rapporto finale e backup `Backup\Pre-import-*.zip` creati.
+- Calendario: icone 🚗 e 🧳, vecchia riga TRASFERTA ✈️ invariata, sabato confermato verde, legenda e riepilogo su più righe senza testi tagliati.
+- Dialoghi di conferma, completamento e modifica ad altezza automatica (`SizeToContent`), pulsanti con larghezza minima.
 
 ## Verifica del logo e del pacchetto
 
-- Logo originale con due pizze pepperoni sovrapposte, in PNG e ICO multiformato.
-- Verifica dei pixel non trasparenti nelle icone da 16, 32, 48 e 256 pixel.
-- Icona EXE da 32 pixel verificata: 529 pixel visibili su 1024.
-- Cartella portabile copiata in una seconda posizione e avviata senza runtime .NET globale.
-- ZIP controllato: eseguibile, guida utente e cartelle `Dati` e `Log` vuote.
-- Nessuna impostazione o giornata di prova inclusa nello ZIP.
-- Dimensione eseguibile: circa 77 MB.
+- Nuovo logo con due pizze sovrapposte: cornicione dorato con bruciature, salsa, mozzarella, salame con dettagli, basilico e fetta mancante.
+- Icone da 16 e 32 pixel disegnate in versione semplificata (una pizza con fetta mancante), riconoscibili nell'area di notifica.
+- ZIP controllato: eseguibile, guida utente e cartelle `Dati` e `Log` vuote; nessun dato di prova incluso.
+- Dimensione eseguibile: circa 78 MB.
 - Dimensione ZIP: circa 72 MB.
-- SHA-256 finale: `735141A435247A8000EA7CA6B2E41BD2561B101929EE2C13DE65E78240FD58D6`.
+- SHA-256 finale: `E99D3754D1E7114A7D99E1FA2680603A7FF8001026D0022993850C3EED2FE9F5`.
 
 ## Limiti della verifica
 
-Il test reale è stato eseguito su Windows 10. Windows 11 è incluso nei target compatibili, ma non era disponibile un secondo sistema per una prova diretta. Il pacchetto non è firmato digitalmente.
+Il test reale è stato eseguito su Windows 10 al 100% di scala. Le finestre di dialogo si adattano al contenuto, ma la resa con scala del testo al 125% o 150% non è stata provata direttamente. Il menu dell'area di notifica con i crediti è stato verificato nel codice ma non aperto con il mouse durante il test. Il pacchetto non è firmato digitalmente.

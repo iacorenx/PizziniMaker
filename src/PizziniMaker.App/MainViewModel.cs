@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using PizziniMaker.Core;
 
 namespace PizziniMaker.App;
@@ -15,12 +16,50 @@ public sealed class MainViewModel : ObservableObject
     private bool _showWeekStatus;
     private int _missingDaysCount;
 
+    private WorkCardHistory _history = new();
+
     public MainViewModel(PizziniStore store, AppSettings settings)
     {
         _store = store;
         Settings = settings;
+        ReloadHistory();
         SetDay(store.LoadDay(DateOnly.FromDateTime(DateTime.Today)));
     }
+
+    public WorkCardHistory History => _history;
+
+    public void ReloadHistory()
+    {
+        try
+        {
+            _history = _store.LoadOrRebuildHistory();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            _history = new WorkCardHistory();
+            LastError = $"Storico schede non disponibile: {exception.Message}";
+        }
+    }
+
+    public bool IsTrasferta
+    {
+        get => _currentDay.IsTrasferta;
+        set
+        {
+            if (_currentDay.IsTrasferta == value || !CanEditDay)
+            {
+                return;
+            }
+
+            _currentDay.IsTrasferta = value;
+            OnPropertyChanged();
+            SaveCurrentDay();
+        }
+    }
+
+    public bool IsOptionalDay => DailyHours.IsOptionalDay(CurrentDate);
+
+    public bool ShowOptionalDayHint => IsOptionalDay && CanEditDay;
 
     public ObservableCollection<ActivityEntryViewModel> Entries { get; } = [];
 
@@ -49,15 +88,28 @@ public sealed class MainViewModel : ObservableObject
         ? $"✓ Giorno confermato il {_currentDay.ConfirmedAt?.ToLocalTime():dd/MM/yyyy HH:mm}"
         : "Bozza non confermata";
 
-    public string TotalText
+    public string TotalText => $"Totale: {ActivityCatalog.FormatDuration(_currentDay.TotalMinutes)}";
+
+    public string HoursDetailText
     {
         get
         {
-            var text = $"Totale: {ActivityCatalog.FormatDuration(_currentDay.TotalMinutes)}";
+            var parts = new List<string>();
             var overtime = DailyHours.GetOvertimeMinutes(_currentDay);
-            return overtime > 0 ? $"{text} · Straordinario: {ActivityCatalog.FormatDuration(overtime)}" : text;
+            if (overtime > 0)
+            {
+                parts.Add($"Straordinario: {ActivityCatalog.FormatDuration(overtime)}");
+            }
+            var travel = DailyHours.GetTravelMinutes(_currentDay);
+            if (travel > 0)
+            {
+                parts.Add($"Viaggio: {ActivityCatalog.FormatDuration(travel)}");
+            }
+            return string.Join(" · ", parts);
         }
     }
+
+    public bool HasHoursDetail => HoursDetailText.Length > 0;
 
     public string LogDirectory => _store.LogDirectory;
 
@@ -141,8 +193,8 @@ public sealed class MainViewModel : ObservableObject
 
         var entry = new ActivityEntry();
         _currentDay.Entries.Add(entry);
-        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged));
-        OnPropertyChanged(nameof(TotalText));
+        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged, () => _history));
+        NotifyTotals();
         SaveCurrentDay();
     }
 
@@ -156,7 +208,7 @@ public sealed class MainViewModel : ObservableObject
         var model = _currentDay.Entries.Single(item => item.Id == entry.Id);
         _currentDay.Entries.Remove(model);
         Entries.Remove(entry);
-        OnPropertyChanged(nameof(TotalText));
+        NotifyTotals();
         SaveCurrentDay();
     }
 
@@ -179,7 +231,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void OnEntryChanged(ActivityEntryViewModel entry, string? propertyName)
     {
-        OnPropertyChanged(nameof(TotalText));
+        NotifyTotals();
 
         if (IsConfirmed && propertyName == nameof(ActivityEntryViewModel.IsPaperRecorded))
         {
@@ -227,8 +279,8 @@ public sealed class MainViewModel : ObservableObject
 
         var entry = new ActivityEntry { Type = type, Minutes = missingMinutes, IsCad = false };
         _currentDay.Entries.Add(entry);
-        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged));
-        OnPropertyChanged(nameof(TotalText));
+        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged, () => _history));
+        NotifyTotals();
         return SaveCurrentDay();
     }
 
@@ -268,6 +320,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             SetDay(_store.ConfirmDay(CurrentDate, Settings.EmployeeName));
+            ReloadHistory();
             LastError = string.Empty;
             PersistenceStatus = "Giorno acquisito e log generato.";
             return [];
@@ -303,6 +356,13 @@ public sealed class MainViewModel : ObservableObject
         SetDay(_currentDay);
     }
 
+    /// <summary>Ricarica giornata corrente e storico dal disco (dopo importazione o modifica dello storico).</summary>
+    public void ReloadFromStore()
+    {
+        ReloadHistory();
+        SetDay(_store.LoadDay(CurrentDate));
+    }
+
     public IReadOnlyList<DateOnly> GetMissingDays() =>
         _store.GetMissingWorkdays(DateOnly.FromDateTime(DateTime.Today), Settings.TrackingStartDate);
 
@@ -313,13 +373,20 @@ public sealed class MainViewModel : ObservableObject
         Entries.Clear();
         foreach (var model in day.Entries)
         {
-            var entry = new ActivityEntryViewModel(model, Settings.CustomActivities, OnEntryChanged);
+            var entry = new ActivityEntryViewModel(model, Settings.CustomActivities, OnEntryChanged, () => _history);
             entry.SetLocked(day.IsConfirmed || IsDayLocked);
             Entries.Add(entry);
         }
 
         NotifyDayProperties();
         RefreshCalendarStatus();
+    }
+
+    private void NotifyTotals()
+    {
+        OnPropertyChanged(nameof(TotalText));
+        OnPropertyChanged(nameof(HoursDetailText));
+        OnPropertyChanged(nameof(HasHoursDetail));
     }
 
     private void NotifyDayProperties()
@@ -331,8 +398,11 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsDayLocked));
         OnPropertyChanged(nameof(CanEditDay));
         OnPropertyChanged(nameof(NonWorkingDayMessage));
+        OnPropertyChanged(nameof(IsTrasferta));
+        OnPropertyChanged(nameof(IsOptionalDay));
+        OnPropertyChanged(nameof(ShowOptionalDayHint));
         OnPropertyChanged(nameof(ConfirmationStatusText));
-        OnPropertyChanged(nameof(TotalText));
+        NotifyTotals();
         PersistenceStatus = IsConfirmed ? "Giorno acquisito." : "Bozza salvata automaticamente.";
     }
 

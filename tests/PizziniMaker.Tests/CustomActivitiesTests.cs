@@ -5,12 +5,13 @@ namespace PizziniMaker.Tests;
 public sealed class CustomActivitiesTests
 {
     [Fact]
-    public void DefaultCatalog_ContainsTransferAndFormationWithIcons()
+    public void DefaultCatalog_ContainsFormationAndTravelButNoLongerTransfer()
     {
         var options = ActivityCatalog.GetActivityOptions(AppSettings.CreateDefaultCustomActivities());
 
-        Assert.Contains(options, option => option.CustomName == "TRASFERTA" && option.Icon == "✈️");
+        Assert.DoesNotContain(options, option => option.CustomName == "TRASFERTA");
         Assert.Contains(options, option => option.CustomName == "FORMAZIONE" && option.Icon == "🎓");
+        Assert.Contains(options, option => option.Type == ActivityType.Viaggio && option.Name == "VIAGGIO");
     }
 
     [Fact]

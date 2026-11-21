@@ -14,7 +14,7 @@ public sealed class PizziniStore
         PropertyNameCaseInsensitive = true
     };
 
-    public PizziniStore(string rootDirectory)
+    public PizziniStore(string rootDirectory, bool createDirectories = true)
     {
         if (string.IsNullOrWhiteSpace(rootDirectory))
         {
@@ -25,8 +25,13 @@ public sealed class PizziniStore
         DataDirectory = Path.Combine(RootDirectory, "Dati");
         LogDirectory = Path.Combine(RootDirectory, "Log");
         SettingsFilePath = Path.Combine(RootDirectory, "Impostazioni.json");
-        Directory.CreateDirectory(DataDirectory);
-        Directory.CreateDirectory(LogDirectory);
+        HistoryFilePath = Path.Combine(RootDirectory, "StoricoSchede.json");
+        BackupDirectory = Path.Combine(RootDirectory, "Backup");
+        if (createDirectories)
+        {
+            Directory.CreateDirectory(DataDirectory);
+            Directory.CreateDirectory(LogDirectory);
+        }
     }
 
     public string RootDirectory { get; }
@@ -37,12 +42,115 @@ public sealed class PizziniStore
 
     public string SettingsFilePath { get; }
 
+    public string HistoryFilePath { get; }
+
+    public string BackupDirectory { get; }
+
     public AppSettings LoadSettings()
     {
         var settings = LoadJson<AppSettings>(SettingsFilePath) ?? new AppSettings();
-        settings.SchemaVersion = 2;
         settings.CustomActivities ??= AppSettings.CreateDefaultCustomActivities();
+        if (settings.SchemaVersion < 3)
+        {
+            // Dalla 1.2.0 la trasferta è una qualifica della giornata e non più un'attività con ore.
+            settings.CustomActivities.RemoveAll(activity => string.Equals(activity.Name?.Trim(),
+                AppSettings.LegacyTrasfertaActivityName, StringComparison.OrdinalIgnoreCase));
+        }
+        settings.SchemaVersion = AppSettings.CurrentSchemaVersion;
         return settings;
+    }
+
+    public WorkCardHistory? LoadHistory() => LoadJson<WorkCardHistory>(HistoryFilePath) is { } history
+        ? Normalize(history)
+        : null;
+
+    /// <summary>
+    /// Carica lo storico schede; se manca o non è leggibile lo ricostruisce dalle giornate confermate.
+    /// </summary>
+    public WorkCardHistory LoadOrRebuildHistory()
+    {
+        try
+        {
+            if (LoadHistory() is { } history)
+            {
+                return history;
+            }
+        }
+        catch (InvalidDataException)
+        {
+            // Lo storico è un dato derivato: se è danneggiato viene ricostruito dalle giornate.
+        }
+
+        var rebuilt = WorkCardHistory.Rebuild(LoadAllDays(out _));
+        SaveHistory(rebuilt);
+        return rebuilt;
+    }
+
+    public void SaveHistory(WorkCardHistory history)
+    {
+        ArgumentNullException.ThrowIfNull(history);
+        WriteJsonAtomic(HistoryFilePath, history);
+    }
+
+    private static WorkCardHistory Normalize(WorkCardHistory history)
+    {
+        history.Entries ??= [];
+        history.Entries.RemoveAll(entry => entry is null || !WorkDayValidator.IsValidWorkCardNumber(entry.Number));
+        foreach (var entry in history.Entries)
+        {
+            entry.Comment = WorkCardHistory.NormalizeComment(entry.Comment);
+        }
+        return history;
+    }
+
+    /// <summary>Date delle giornate salvate (file <c>yyyy-MM-dd.json</c> o solo il relativo <c>.bak</c>).</summary>
+    public IReadOnlyList<DateOnly> EnumerateDayDates()
+    {
+        if (!Directory.Exists(DataDirectory))
+        {
+            return [];
+        }
+
+        return Directory.EnumerateFiles(DataDirectory)
+            .Select(Path.GetFileName)
+            .Select(name => name!.EndsWith(".json.bak", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name)
+            .Select(name => TryParseDayFileName(name, out var date) ? date : (DateOnly?)null)
+            .OfType<DateOnly>()
+            .Distinct()
+            .Order()
+            .ToArray();
+    }
+
+    public static bool TryParseDayFileName(string? fileName, out DateOnly date)
+    {
+        date = default;
+        return fileName is not null && fileName.Length == 15 &&
+            fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase) &&
+            DateOnly.TryParseExact(fileName[..10], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
+    }
+
+    /// <summary>Carica tutte le giornate leggibili; le date non leggibili sono restituite in <paramref name="unreadable"/>.</summary>
+    public IReadOnlyList<WorkDay> LoadAllDays(out IReadOnlyList<DateOnly> unreadable)
+    {
+        var days = new List<WorkDay>();
+        var errors = new List<DateOnly>();
+        foreach (var date in EnumerateDayDates())
+        {
+            try
+            {
+                if (LoadExistingDay(date) is { } day)
+                {
+                    days.Add(day);
+                }
+            }
+            catch (InvalidDataException)
+            {
+                errors.Add(date);
+            }
+        }
+
+        unreadable = errors;
+        return days;
     }
 
     public void SaveSettings(AppSettings settings)
@@ -91,6 +199,7 @@ public sealed class PizziniStore
 
     private static bool HasHistoricalContent(ActivityEntry entry) =>
         entry.Type != ActivityType.Scheda || entry.Minutes != 30 || !string.IsNullOrEmpty(entry.WorkCardNumber) ||
+        !string.IsNullOrEmpty(entry.WorkCardComment) ||
         !entry.IsCad || entry.IsPaperRecorded || !string.IsNullOrEmpty(entry.CustomActivityName);
 
     public void SaveDay(WorkDay day)
@@ -113,7 +222,29 @@ public sealed class PizziniStore
         day.ConfirmedAt = DateTimeOffset.Now;
         SaveDay(day);
         WriteLog(day, employeeName);
+        RecordInHistory(day);
         return day;
+    }
+
+    private void RecordInHistory(WorkDay day)
+    {
+        try
+        {
+            var history = LoadOrRebuildHistory();
+            history.RecordDay(day);
+            SaveHistory(history);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Lo storico serve solo ai suggerimenti: un errore non deve impedire la conferma della giornata.
+        }
+    }
+
+    /// <summary>Scrive una giornata importata così com'è, senza alterarne la data di ultima modifica.</summary>
+    public void WriteImportedDay(WorkDay day)
+    {
+        ArgumentNullException.ThrowIfNull(day);
+        WriteJsonAtomic(GetDayFilePath(day.Date), day);
     }
 
     public WorkDay ReopenDay(DateOnly date)
@@ -163,7 +294,7 @@ public sealed class PizziniStore
     public string GetLogFilePath(DateOnly date) =>
         Path.Combine(LogDirectory, date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".txt");
 
-    private string GetDayFilePath(DateOnly date) =>
+    public string GetDayFilePath(DateOnly date) =>
         Path.Combine(DataDirectory, date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".json");
 
     private T? LoadJson<T>(string path) where T : class

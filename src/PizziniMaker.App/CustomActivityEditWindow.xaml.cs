@@ -7,7 +7,7 @@ namespace PizziniMaker.App;
 public partial class CustomActivityEditWindow : Window
 {
     private static readonly string[] Icons = ["✈️", "🎓", "🚗", "🚆", "🏨", "💼", "🛠️", "📌", "📚", "🤝", "🏭", "🧾"];
-    private static readonly string[] ReservedNames = ["SCHEDA", "QU", "FERIE/PERMESSO", "MALATTIA", "INFORTUNIO"];
+    private static readonly string[] ReservedNames = [.. ActivityCatalog.ReservedActivityNames];
     private readonly string[] _otherNames;
 
     public CustomActivityEditWindow(CustomActivityDefinition? activity, IEnumerable<string> otherNames)

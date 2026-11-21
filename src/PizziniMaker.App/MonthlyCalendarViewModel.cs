@@ -29,6 +29,8 @@ public sealed class MonthlyCalendarViewModel : ObservableObject
     private string _sickSummary = string.Empty;
     private string _overtimeSummary = string.Empty;
     private string _missingSummary = string.Empty;
+    private string _travelSummary = string.Empty;
+    private string _trasfertaSummary = string.Empty;
     private int _missingDays;
 
     public MonthlyCalendarViewModel(MainViewModel mainViewModel)
@@ -46,6 +48,8 @@ public sealed class MonthlyCalendarViewModel : ObservableObject
     public string OvertimeSummary { get => _overtimeSummary; private set => SetProperty(ref _overtimeSummary, value); }
     public string MissingSummary { get => _missingSummary; private set => SetProperty(ref _missingSummary, value); }
     public int MissingDays { get => _missingDays; private set => SetProperty(ref _missingDays, value); }
+    public string TravelSummary { get => _travelSummary; private set => SetProperty(ref _travelSummary, value); }
+    public string TrasfertaSummary { get => _trasfertaSummary; private set => SetProperty(ref _trasfertaSummary, value); }
 
     public void PreviousMonth()
     {
@@ -85,6 +89,8 @@ public sealed class MonthlyCalendarViewModel : ObservableObject
         OvertimeSummary = $"€€ Straordinario: {FormatDayCount(report.OvertimeDays)} · {ActivityCatalog.FormatDuration(report.OvertimeMinutes)}";
         MissingSummary = $"! Da completare: {FormatDayCount(report.MissingDays)} · {ActivityCatalog.FormatDuration(report.MissingMinutes)} mancanti";
         MissingDays = report.MissingDays;
+        TravelSummary = $"{ActivityCatalog.TravelIcon} Viaggio: {FormatDayCount(report.TravelDays)} · {ActivityCatalog.FormatDuration(report.TravelMinutes)}";
+        TrasfertaSummary = $"{ActivityCatalog.TrasfertaIcon} Trasferta: {FormatDayCount(report.TrasfertaDays)}";
     }
 
     private static string FormatDayCount(int count) => count == 1 ? "1 giorno" : $"{count} giorni";
@@ -105,6 +111,18 @@ public sealed class MonthlyCalendarViewModel : ObservableObject
         if (day.HasSavedData)
         {
             tooltip += $"\nTotale: {ActivityCatalog.FormatDuration(day.TotalMinutes)}";
+        }
+        if (day.TravelMinutes > 0)
+        {
+            tooltip += $"\nViaggio: {ActivityCatalog.FormatDuration(day.TravelMinutes)}";
+        }
+        if (day.OvertimeMinutes > 0)
+        {
+            tooltip += $"\nStraordinario: {ActivityCatalog.FormatDuration(day.OvertimeMinutes)}";
+        }
+        if (day.IsTrasferta)
+        {
+            tooltip += "\nTrasferta (pernotto fuori)";
         }
         if (day.IsIncomplete)
         {

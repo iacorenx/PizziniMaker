@@ -2,19 +2,27 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Icon="/PizziniMaker;component/Assets/PizziniMaker.ico"
-        Title="Impostazioni - PizziniMaker" Width="440" Height="460" MinHeight="410" MinWidth="400"
+        Title="Impostazioni - PizziniMaker" Width="470" Height="740" MinHeight="420" MinWidth="400"
         WindowStartupLocation="CenterOwner" Background="#FFF9EF" FontFamily="Segoe UI" FontSize="13">
+    <Window.Resources>
+        <Style x:Key="Section" TargetType="Border">
+            <Setter Property="Margin" Value="0,12,0,0"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="Background" Value="#F3EEE3"/>
+            <Setter Property="CornerRadius" Value="3"/>
+        </Style>
+    </Window.Resources>
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
-                <TextBlock Text="Impostazioni" FontSize="22" FontWeight="SemiBold" Foreground="#3D392F"/>
+            <StackPanel Margin="0,0,4,0">
+                <TextBlock Text="Impostazioni" FontSize="22" FontWeight="SemiBold" Foreground="#3D392F" TextWrapping="Wrap"/>
                 <TextBlock Margin="0,8,0,18" TextWrapping="Wrap" Foreground="#6C665B"
                            Text="I dati restano nella cartella portabile dell'applicazione."/>
-                <TextBlock Text="Nome del dipendente" FontWeight="SemiBold"/>
+                <TextBlock Text="Nome del dipendente" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 <TextBox x:Name="EmployeeTextBox" Margin="0,5,0,14" Padding="8,6" MaxLength="100"/>
                 <TextBlock Text="Controlla i giorni mancanti a partire da" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 <DatePicker x:Name="TrackingDatePicker" Margin="0,5,0,16" Padding="5,4"/>
@@ -24,20 +32,42 @@
                 <CheckBox x:Name="StartupCheckBox" Margin="0,10,0,6">
                     <TextBlock Text="Avvia PizziniMaker con Windows" TextWrapping="Wrap"/>
                 </CheckBox>
-                <Border Margin="0,16,0,4" Padding="10" Background="#F3EEE3" CornerRadius="3">
+                <Border Style="{StaticResource Section}">
                     <StackPanel>
-                        <TextBlock Text="Attività personalizzate" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="CustomActivitiesSummary" Margin="0,4,0,8" TextWrapping="Wrap" Foreground="#6C665B"/>
-                        <Button Content="Gestisci attività personalizzate..." Click="ManageActivities_Click"
-                                Padding="8,5" HorizontalAlignment="Left"/>
+                        <TextBlock Text="Attività personalizzate" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="CustomActivitiesSummary" Margin="0,4,0,8" TextWrapping="Wrap" Foreground="#6C665B"
+                                   FontFamily="Segoe UI, Segoe UI Emoji"/>
+                        <Button Click="ManageActivities_Click" Padding="10,5" HorizontalAlignment="Left">
+                            <TextBlock Text="Gestisci attività personalizzate…" TextWrapping="Wrap"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Section}">
+                    <StackPanel>
+                        <TextBlock Text="Storico schede" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        <TextBlock Margin="0,4,0,8" TextWrapping="Wrap" Foreground="#6C665B"
+                                   Text="Numeri di scheda e commenti proposti durante la compilazione."/>
+                        <Button Click="ManageHistory_Click" Padding="10,5" HorizontalAlignment="Left">
+                            <TextBlock Text="Gestisci storico schede…" TextWrapping="Wrap"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Section}">
+                    <StackPanel>
+                        <TextBlock Text="Versione precedente" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        <TextBlock Margin="0,4,0,8" TextWrapping="Wrap" Foreground="#6C665B"
+                                   Text="Recupera giornate, log e storico dalla cartella di una versione precedente senza sovrascrivere i dati attuali."/>
+                        <Button Click="Import_Click" Padding="10,5" HorizontalAlignment="Left">
+                            <TextBlock Text="Importa dati da una versione precedente…" TextWrapping="Wrap"/>
+                        </Button>
                     </StackPanel>
                 </Border>
             </StackPanel>
         </ScrollViewer>
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-            <Button Content="Annulla" Width="90" Margin="0,0,8,0" Padding="8,6" IsCancel="True"/>
-            <Button Content="Salva" Width="90" Padding="8,6" IsDefault="True" Click="Save_Click"
+        <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Annulla" MinWidth="90" Margin="0,0,8,0" Padding="12,6" IsCancel="True"/>
+            <Button Content="Salva" MinWidth="90" Padding="12,6" IsDefault="True" Click="Save_Click"
                     Background="#2F6F4E" Foreground="White" BorderBrush="#2F6F4E"/>
-        </StackPanel>
+        </WrapPanel>
     </Grid>
 </Window>

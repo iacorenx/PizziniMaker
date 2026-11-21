@@ -64,6 +64,37 @@ public sealed class MonthlySummaryServiceTests
         Assert.False(info.IsRequiredWorkday);
     }
 
+    [Fact]
+    public void BuildMonth_CountsTravelTransferAndSaturdayOvertime()
+    {
+        var monday = ConfirmedDay(new DateOnly(2026, 11, 16),
+            new ActivityEntry { WorkCardNumber = "8000", Minutes = 480 },
+            new ActivityEntry { Type = ActivityType.Viaggio, Minutes = 120 });
+        monday.IsTrasferta = true;
+        var tuesday = ConfirmedDay(new DateOnly(2026, 11, 17), new ActivityEntry { WorkCardNumber = "8000", Minutes = 480 });
+        tuesday.IsTrasferta = true;
+        var saturday = ConfirmedDay(new DateOnly(2026, 11, 21),
+            new ActivityEntry { WorkCardNumber = "8000", Minutes = 180 },
+            new ActivityEntry { Type = ActivityType.Viaggio, Minutes = 60 });
+        var days = new[] { monday, tuesday, saturday }.ToDictionary(day => day.Date);
+
+        var report = MonthlySummaryService.BuildMonth(2026, 11, new DateOnly(2026, 11, 22),
+            new DateOnly(2026, 11, 16), date => days.GetValueOrDefault(date));
+
+        Assert.Equal(2, report.TravelDays);
+        Assert.Equal(180, report.TravelMinutes);
+        Assert.Equal(2, report.TrasfertaDays);
+        Assert.Equal(1, report.OvertimeDays);
+        Assert.Equal(180, report.OvertimeMinutes);
+        var mondayInfo = report.Days.Single(day => day.Date.Day == 16);
+        Assert.Contains("🧳", mondayInfo.Icons);
+        Assert.Contains("🚗", mondayInfo.Icons);
+        Assert.DoesNotContain("€€", mondayInfo.Icons);
+        var saturdayInfo = report.Days.Single(day => day.Date.Day == 21);
+        Assert.True(saturdayInfo.IsComplete);
+        Assert.False(saturdayInfo.IsIncomplete);
+    }
+
     private static WorkDay ConfirmedDay(DateOnly date, params ActivityEntry[] entries) => new()
     {
         Date = date,

@@ -30,6 +30,7 @@ public static class ActivityCatalog
         var options = new List<ActivitySelection>
         {
             new("Scheda", ActivityType.Scheda, "Scheda", "▤"),
+            new("Viaggio", ActivityType.Viaggio, "VIAGGIO", TravelIcon),
             new("Qu", ActivityType.Qu, "QU", "◷"),
             new("FeriePermesso", ActivityType.FeriePermesso, "FERIE/PERMESSO", "🏝️"),
             new("Malattia", ActivityType.Malattia, "MALATTIA", "✚"),
@@ -58,6 +59,7 @@ public static class ActivityCatalog
         ActivityType.Malattia => "MALATTIA",
         ActivityType.Infortunio => "INFORTUNIO",
         ActivityType.Custom => "PERSONALIZZATA",
+        ActivityType.Viaggio => "VIAGGIO",
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
     };
 
@@ -71,8 +73,17 @@ public static class ActivityCatalog
         ActivityType.Malattia => "✚",
         ActivityType.Infortunio => "🩹",
         ActivityType.Custom => entry.CustomActivityIcon,
+        ActivityType.Viaggio => TravelIcon,
         _ => string.Empty
     };
+
+    public const string TravelIcon = "🚗";
+
+    public const string TrasfertaIcon = "🧳";
+
+    /// <summary>Nomi non utilizzabili per le attività personalizzate.</summary>
+    public static IReadOnlyList<string> ReservedActivityNames { get; } =
+        ["SCHEDA", "QU", "FERIE/PERMESSO", "MALATTIA", "INFORTUNIO", "VIAGGIO", AppSettings.LegacyTrasfertaActivityName];
 
     public static string FormatHours(int minutes) => (minutes / 60m).ToString("0.#", ItalianCulture);
 

@@ -47,7 +47,7 @@ public static class WorkDayValidator
     public static IReadOnlyList<string> ValidateForConfirmation(WorkDay day)
     {
         var errors = Validate(day).ToList();
-        if (day.TotalMinutes < DailyHours.RequiredMinutes)
+        if (!DailyHours.IsOptionalDay(day.Date) && day.TotalMinutes < DailyHours.RequiredMinutes)
         {
             errors.Add($"Per chiudere il giorno servono almeno {ActivityCatalog.FormatDuration(DailyHours.RequiredMinutes)}.");
         }

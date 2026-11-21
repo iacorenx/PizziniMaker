@@ -7,7 +7,8 @@ public enum ActivityType
     FeriePermesso,
     Malattia,
     Infortunio,
-    Custom
+    Custom,
+    Viaggio
 }
 
 public sealed class CustomActivityDefinition
@@ -29,6 +30,8 @@ public sealed class ActivityEntry
 
     public string WorkCardNumber { get; set; } = string.Empty;
 
+    public string WorkCardComment { get; set; } = string.Empty;
+
     public bool IsCad { get; set; } = true;
 
     public bool IsPaperRecorded { get; set; }
@@ -48,6 +51,8 @@ public sealed class WorkDay
 
     public bool AllowNonWorkingDay { get; set; }
 
+    public bool IsTrasferta { get; set; }
+
     public DateTimeOffset LastModifiedAt { get; set; }
 
     public DateTimeOffset? ConfirmedAt { get; set; }
@@ -63,7 +68,11 @@ public sealed class WorkDay
 
 public sealed class AppSettings
 {
-    public int SchemaVersion { get; set; } = 2;
+    public const int CurrentSchemaVersion = 3;
+
+    public const string LegacyTrasfertaActivityName = "TRASFERTA";
+
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
     public string EmployeeName { get; set; } = string.Empty;
 
@@ -77,7 +86,6 @@ public sealed class AppSettings
 
     public static List<CustomActivityDefinition> CreateDefaultCustomActivities() =>
     [
-        new() { Name = "TRASFERTA", Icon = "✈️" },
         new() { Name = "FORMAZIONE", Icon = "🎓" }
     ];
 }

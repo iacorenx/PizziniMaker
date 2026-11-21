@@ -8,7 +8,7 @@ using WpfApplication = System.Windows.Application;
 
 namespace PizziniMaker.App;
 
-public partial class App : WpfApplication
+public partial class App : WpfApplication, ISettingsActions
 {
     private Mutex? _singleInstanceMutex;
     private bool _ownsMutex;
@@ -42,7 +42,7 @@ public partial class App : WpfApplication
 
         if (string.IsNullOrWhiteSpace(_settings.EmployeeName))
         {
-            var setupWindow = new SettingsWindow(_settings, true)
+            var setupWindow = new SettingsWindow(_settings, true, this)
             {
                 WindowStartupLocation = WindowStartupLocation.CenterScreen
             };
@@ -83,7 +83,7 @@ public partial class App : WpfApplication
     public void ShowSettings(Window owner)
     {
         _viewModel.SaveCurrentDay();
-        var settingsWindow = new SettingsWindow(_settings, false) { Owner = owner };
+        var settingsWindow = new SettingsWindow(_settings, false, this) { Owner = owner };
         if (settingsWindow.ShowDialog() != true || !SaveSettings(owner))
         {
             return;
@@ -92,6 +92,102 @@ public partial class App : WpfApplication
         _viewModel.ApplySettings(_settings);
         _mainWindow.Topmost = _settings.AlwaysOnTop;
     }
+
+    public void ManageWorkCardHistory(Window owner)
+    {
+        _viewModel?.SaveCurrentDay();
+        WorkCardHistory history;
+        try
+        {
+            history = _store.LoadOrRebuildHistory();
+        }
+        catch (Exception exception)
+        {
+            ShowError(owner, $"Impossibile leggere lo storico schede: {exception.Message}");
+            return;
+        }
+
+        var window = new WorkCardHistoryWindow(history) { Owner = owner };
+        if (window.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _store.SaveHistory(window.Result);
+        }
+        catch (Exception exception)
+        {
+            ShowError(owner, $"Impossibile salvare lo storico schede: {exception.Message}");
+            return;
+        }
+
+        _viewModel?.ReloadHistory();
+    }
+
+    public bool ImportLegacyData(Window owner)
+    {
+        _viewModel?.SaveCurrentDay();
+        using var dialog = new FolderBrowserDialog
+        {
+            Description = "Seleziona la cartella PizziniMaker della versione precedente (quella che contiene Dati, Log e Impostazioni.json)",
+            UseDescriptionForTitle = true,
+            ShowNewFolderButton = false,
+            InitialDirectory = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(_store.RootDirectory)) ?? string.Empty
+        };
+        if (dialog.ShowDialog() != DialogResult.OK)
+        {
+            return false;
+        }
+
+        ImportPreview preview;
+        try
+        {
+            preview = LegacyImportService.Analyze(dialog.SelectedPath, _store, _settings);
+        }
+        catch (InvalidOperationException exception)
+        {
+            ShowError(owner, exception.Message);
+            return false;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ShowError(owner, $"Impossibile leggere la cartella selezionata: {exception.Message}");
+            return false;
+        }
+
+        var previewWindow = new ImportWindow(preview) { Owner = owner };
+        if (previewWindow.ShowDialog() != true)
+        {
+            return false;
+        }
+
+        ImportReport report;
+        try
+        {
+            report = LegacyImportService.Execute(preview, _store, _settings, new ImportOptions(previewWindow.ImportSettings));
+        }
+        catch (Exception exception)
+        {
+            ShowError(owner, $"Importazione non completata: {exception.Message}\n\n" +
+                $"I dati presenti prima dell'importazione sono salvati nella cartella {_store.BackupDirectory}.");
+            _viewModel?.ReloadFromStore();
+            return false;
+        }
+
+        if (_viewModel is not null)
+        {
+            _viewModel.ApplySettings(_settings);
+            _viewModel.ReloadFromStore();
+        }
+
+        new ImportWindow(report) { Owner = owner }.ShowDialog();
+        return report.CustomActivitiesAdded > 0 || report.SettingsUpdated;
+    }
+
+    private static void ShowError(Window owner, string message) =>
+        System.Windows.MessageBox.Show(owner, message, "PizziniMaker", MessageBoxButton.OK, MessageBoxImage.Warning);
 
     public void ShowMainWindow()
     {
@@ -172,6 +268,8 @@ public partial class App : WpfApplication
         var menu = new ContextMenuStrip();
         menu.Items.Add("Apri PizziniMaker", null, (_, _) => Dispatcher.Invoke(ShowMainWindow));
         menu.Items.Add("Apri cartella log", null, (_, _) => Dispatcher.Invoke(OpenLogFolder));
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(new ToolStripMenuItem("Energy Srl · Iacopo Preci · 2026") { Enabled = false });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Esci", null, (_, _) => Dispatcher.Invoke(ExitApplication));
 
