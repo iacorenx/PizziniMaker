@@ -34,7 +34,7 @@ public sealed class MonthlySummaryServiceTests
 
         var overtimeDay = report.Days.Single(day => day.Date.Day == 4);
         Assert.True(overtimeDay.IsComplete);
-        Assert.Contains("€€", overtimeDay.Icons);
+        Assert.Contains("€", overtimeDay.Icons);
         Assert.Contains("✈️", overtimeDay.Icons);
         Assert.Contains("🏝️", report.Days.Single(day => day.Date.Day == 5).Icons);
         Assert.Contains("✚", report.Days.Single(day => day.Date.Day == 6).Icons);
@@ -89,7 +89,7 @@ public sealed class MonthlySummaryServiceTests
         var mondayInfo = report.Days.Single(day => day.Date.Day == 16);
         Assert.Contains("🧳", mondayInfo.Icons);
         Assert.Contains("🚗", mondayInfo.Icons);
-        Assert.DoesNotContain("€€", mondayInfo.Icons);
+        Assert.DoesNotContain("€", mondayInfo.Icons);
         var saturdayInfo = report.Days.Single(day => day.Date.Day == 21);
         Assert.True(saturdayInfo.IsComplete);
         Assert.False(saturdayInfo.IsIncomplete);

@@ -67,13 +67,14 @@
             </Grid.ColumnDefinitions>
             <TextBlock Text="Legenda:" FontWeight="SemiBold" Margin="0,0,8,0"/>
             <TextBlock Grid.Column="1" Foreground="#6C665B" TextWrapping="Wrap"
-                       Text="verde = completo · arancione = incompleto · rosso = festività · 🔒 = forzatura richiesta · 🚗 = viaggio · 🧳 = trasferta · €€ = straordinario"/>
+                       Text="verde = completo · arancione = incompleto · rosso = festività · 🔒 = forzatura richiesta · 🚗 = viaggio · 🧳 = trasferta · ⚠ = infortunio · € = straordinario"/>
         </Grid>
         <Border Grid.Row="4" Background="#F3EEE3" BorderBrush="#D8CEBC" BorderThickness="1" Padding="12" CornerRadius="3">
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TextBlock Text="{Binding LeaveSummary}" Margin="0,3,8,3" TextWrapping="Wrap"/>
                 <TextBlock Grid.Column="1" Text="{Binding SickSummary}" Margin="8,3,0,3" TextWrapping="Wrap"/>
@@ -81,7 +82,8 @@
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TravelSummary}" Margin="8,3,0,3" TextWrapping="Wrap"/>
                 <TextBlock Grid.Row="2" Text="{Binding TrasfertaSummary}" Margin="0,3,8,3" TextWrapping="Wrap"/>
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MissingSummary}" Margin="8,3,0,3" Foreground="#A74716" TextWrapping="Wrap"/>
-                <Button Grid.Row="3" Grid.Column="1" Content="Apri giorni mancanti" Click="MissingDays_Click"
+                <TextBlock Grid.Row="3" Text="{Binding InjurySummary}" Margin="0,3,8,3" TextWrapping="Wrap"/>
+                <Button Grid.Row="4" Grid.Column="1" Content="Apri giorni mancanti" Click="MissingDays_Click"
                         HorizontalAlignment="Right" Padding="10,4" Margin="0,5,0,0"/>
             </Grid>
         </Border>

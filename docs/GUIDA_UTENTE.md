@@ -2,20 +2,22 @@
 
 ## Installazione e trasferimento
 
-PizziniMaker non richiede installazione né runtime aggiuntivi.
+PizziniMaker (versione 1.3.0) non richiede installazione né runtime aggiuntivi.
 
-1. Estrarre `PizziniMaker-win-x64.zip` in una cartella scrivibile, ad esempio `Documenti\PizziniMaker`.
+1. Estrarre `PizziniMaker-1.3.0-win-x64.zip` in una cartella scrivibile, ad esempio `Documenti\PizziniMaker`.
 2. Avviare `PizziniMaker.exe` con l'icona delle due pizze.
-3. Al primo avvio inserire il nome del dipendente e la data dalla quale controllare i giorni mancanti.
-4. Per spostare il programma, chiuderlo dal menu dell'icona nell'area di notifica e copiare l'intera cartella.
+3. Al primo avvio il programma cerca una versione precedente (cartelle vicine, Desktop, Documenti, Download) e propone di importarne **giornate, log, note spese, storico, nome del dipendente e preferenze**. In alternativa si può scegliere la cartella a mano o partire da zero.
+4. Se non si importa nulla, inserire il nome del dipendente e la data dalla quale controllare i giorni mancanti.
+5. Per spostare il programma, chiuderlo dal menu dell'icona nell'area di notifica e copiare l'intera cartella.
 
 Nella cartella vengono creati:
 
 - `Impostazioni.json`: nome, preferenze e attività personalizzate;
 - `Dati`: bozze e giornate confermate;
 - `Log`: riepiloghi testuali dei giorni confermati;
-- `StoricoSchede.json`: numeri di scheda e commenti usati per i suggerimenti;
-- `Backup`: archivi ZIP creati automaticamente prima di ogni importazione.
+- `StoricoSchede.json`: numeri di scheda, mandati, preventivi e commenti usati per i suggerimenti;
+- `NoteSpese`: note spese mensili e copie delle ricevute allegate;
+- `Backup`: archivi ZIP creati automaticamente prima di ogni importazione e di ogni aggiornamento.
 
 Copiare periodicamente l'intera cartella per avere una copia di sicurezza. I file `.bak` contengono la versione precedente dei dati.
 
@@ -26,6 +28,9 @@ Copiare periodicamente l'intera cartella per avere una copia di sicurezza. I fil
 - Per **Scheda**, inserire esattamente quattro cifre. Gli zeri iniziali sono conservati.
 - Sotto il numero è disponibile il **Commento** (ad esempio cliente o cantiere). Mentre si scrive compaiono le schede già usate: ad esempio `Bac` propone `8092 — Baccane`. Si sceglie con il mouse oppure con **↑**/**↓** e **Invio**; numero e commento vengono compilati insieme. La ricerca funziona anche sul numero e non distingue maiuscole e minuscole.
 - Digitando un numero già presente nello storico con il commento vuoto, il commento viene proposto automaticamente.
+- **MANDATO ✎** si scrive come numero/lettera, ad esempio `123/X`: numero nella prima casella, lettera nella seconda (diventa maiuscola).
+- **PREVENTIVO ✉** si scrive come numero/anno, ad esempio `1234/2026`: l'anno è già compilato con quello della giornata e si può modificare.
+- Mandati e preventivi funzionano come le schede: ore, **CAD**, **Su carta**, commento e suggerimenti dallo storico (cercati solo tra i riferimenti dello stesso tipo).
 - **VIAGGIO 🚗** registra le ore di viaggio: contano per le 8 ore ma hanno una contabilità separata e non diventano mai straordinario.
 - **CAD** è attivo inizialmente e può essere deselezionato.
 - **Su carta** indica che l'attività è stata riportata anche sulla scheda cartacea.
@@ -59,9 +64,29 @@ Il pulsante **📅** apre il calendario del mese visualizzato. È possibile camb
 - **Bordo blu:** giorno corrente.
 - **🔒:** domenica o festività che richiede forzatura.
 
-Le celle possono mostrare 🏝️ per ferie/permesso, il simbolo della farmacia per malattia, `€€` per straordinario, 🚗 per viaggio, 🧳 per trasferta e le icone delle attività personalizzate (✈️ per le vecchie righe TRASFERTA).
+Le celle possono mostrare 🏝️ per ferie/permesso, il simbolo della farmacia per malattia, ⚠ per infortunio, `€` per straordinario, 🚗 per viaggio, 🧳 per trasferta e le icone delle attività personalizzate (✈️ per le vecchie righe TRASFERTA).
 
-Il riepilogo inferiore indica giorni e ore di ferie/permesso e malattia, giorni e ore di straordinario e di viaggio, giorni di trasferta, giorni da completare e ore necessarie. Il giorno corrente e quelli futuri non vengono contati tra i giorni mancanti.
+Il riepilogo inferiore indica giorni e ore di ferie/permesso, malattia e infortunio, giorni e ore di straordinario e di viaggio, giorni di trasferta, giorni da completare e ore necessarie. Il giorno corrente e quelli futuri non vengono contati tra i giorni mancanti.
+
+## Note spese
+
+Il pulsante **🧾** in alto (con il numero di spese del giorno, se presenti) apre le note spese del mese. Le spese sono indipendenti dalla conferma del giorno e restano sempre modificabili.
+
+- **Aggiungi**: data, categoria (**Pasto**, **Viaggio** per biglietti/pedaggi/parcheggi, **Chilometri auto**, **Alloggio**, **Altro**), importo in euro (es. `12,50`) e descrizione.
+- **Chilometri auto**: si indicano i km; l'importo è calcolato con la tariffa €/km di **Impostazioni → Note spese**. Ogni spesa conserva la tariffa con cui è stata inserita.
+- **Allegato** (facoltativo): con **Sfoglia…** si sceglie la foto o il PDF dello scontrino; ne viene salvata una copia in `NoteSpese\Allegati`, l'originale non viene toccato. **Apri** lo mostra, **Rimuovi** lo toglie.
+- **Segna rimborsata / da rimborsare** registra lo stato e la data del rimborso.
+- In basso: totale del mese (o del solo giorno, con l'apposita casella), importo da rimborsare, già rimborsato e km.
+
+## Stampa, PDF e Word
+
+Il pulsante **🖨** in alto (o **Stampa giorni…** nel menu dell'icona) apre la finestra di stampa.
+
+1. Nel calendario spuntare i giorni da stampare; si può cambiare mese mantenendo la selezione. Sono selezionabili i giorni con attività (verde = confermato, giallo = bozza). **Seleziona confermati del mese** li spunta tutti insieme.
+2. Il riepilogo indica giorni selezionati e fogli A4 necessari.
+3. **Anteprima**, **Stampa…**, **Salva PDF…** o **Salva Word…**.
+
+Ogni giorno è un foglietto **A6** con bordo tratteggiato, **quattro per foglio A4 verticale**: in alto a sinistra il nome del dipendente, in alto a destra la data `GG/MM/AAAA`, sotto l'elenco delle attività in caratteri grandi e in fondo il totale (con viaggio, straordinario, trasferta e la scritta BOZZA se il giorno non è confermato). Accanto a schede, mandati e preventivi c'è un quadratino: con la **V** se l'attività è registrata su carta, vuoto altrimenti. Il bordo tratteggiato è rientrato di 3 mm per restare nell'area stampabile delle stampanti.
 
 ## Domeniche e festività nazionali
 
@@ -80,9 +105,19 @@ Sabati, domeniche, festività nazionali, giorni futuri e date precedenti all'ini
 
 ## Area di notifica e avvio automatico
 
-La chiusura della finestra con **X** la nasconde ma lascia PizziniMaker disponibile accanto all'orologio. Fare doppio clic sull'icona delle pizze per riaprirlo. Per chiudere completamente usare **Esci** nel menu dell'icona, che riporta anche i crediti (Energy Srl · Iacopo Preci · 2026).
+La chiusura della finestra con **X** la nasconde ma lascia PizziniMaker disponibile accanto all'orologio. Fare doppio clic sull'icona delle pizze per riaprirlo. Per chiudere completamente usare **Esci** nel menu dell'icona (tasto destro), che riporta anche **la versione installata** e i crediti (`PizziniMaker 1.3.0 · Energy Srl · Iacopo Preci · 2026`).
 
-Nelle impostazioni è possibile cambiare dipendente, data di inizio controllo, attività personalizzate, storico schede, modalità sempre in primo piano e avvio con Windows. Se la cartella viene spostata, all'avvio successivo il percorso di avvio automatico viene aggiornato quando questa opzione è attiva.
+Nelle impostazioni è possibile cambiare dipendente, data di inizio controllo, attività personalizzate, storico schede, tariffa €/km, modalità sempre in primo piano, avvio con Windows e controllo automatico degli aggiornamenti.
+
+## Aggiornamenti
+
+Con il tasto destro sull'icona → **Verifica aggiornamenti…** il programma controlla su GitHub se è stata pubblicata una versione più recente. Se c'è:
+
+1. vengono mostrate la versione installata, quella nuova e le novità;
+2. **Scarica e installa** scarica il pacchetto, ne verifica l'impronta SHA-256, crea un backup ZIP dei dati in `Backup\Pre-aggiornamento-*.zip`, sostituisce solo il programma e riavvia PizziniMaker;
+3. giornate, log, note spese, impostazioni e storico restano nella stessa cartella e non vengono toccati.
+
+Se l'opzione è attiva, all'avvio (al massimo una volta al giorno) un fumetto avvisa quando è disponibile una nuova versione; nulla viene scaricato senza conferma. Senza connessione a internet il programma funziona normalmente. La cartella del programma deve essere scrivibile (es. Documenti, non `C:\Programmi`). Se la cartella viene spostata, all'avvio successivo il percorso di avvio automatico viene aggiornato quando questa opzione è attiva.
 
 ## Storico schede
 
@@ -90,16 +125,17 @@ Da **Impostazioni → Gestisci storico schede** è possibile cercare per numero 
 
 ## Importazione da una versione precedente
 
-Per passare a una nuova versione: estrarre la nuova versione in una cartella diversa, avviarla e usare **Impostazioni → Importa dati da una versione precedente…**, scegliendo la vecchia cartella `PizziniMaker` (o la sua sottocartella `Dati`).
+Il modo più semplice per aggiornare è **Verifica aggiornamenti…** (vedi sopra). Se invece si estrae la nuova versione in una cartella diversa, al primo avvio viene proposta l'importazione automatica; in qualsiasi momento si può usare **Impostazioni → Importa dati da una versione precedente…**, scegliendo la vecchia cartella `PizziniMaker` (o la sua sottocartella `Dati`).
 
-1. Viene mostrata un'anteprima con giornate da importare, giornate già presenti, log, nuove schede ed eventuali file non validi.
+1. Viene mostrata un'anteprima con giornate da importare, giornate già presenti, log, nuove schede, note spese ed eventuali file non validi.
 2. Dopo la conferma viene creato un backup ZIP dei dati attuali nella cartella `Backup`.
 3. Le giornate assenti vengono importate; se una data esiste già, **viene mantenuta la giornata attuale**. I log vengono copiati solo per le giornate importate.
 4. Lo storico schede viene fuso e completato con le giornate importate.
-5. Solo se si spunta l'opzione dedicata vengono aggiunte le attività personalizzate mancanti e anticipata la data di inizio controllo.
+5. Le note spese mancanti vengono aggiunte con i loro allegati; quelle già presenti non vengono sovrascritte.
+6. Solo se si spunta l'opzione dedicata vengono aggiunte le attività personalizzate mancanti e anticipata la data di inizio controllo. In una cartella nuova (primo avvio) vengono riprese anche nome, preferenze, avvio con Windows e tariffa €/km.
 
 La cartella di origine non viene modificata e non è possibile selezionare la cartella del programma in esecuzione. Al termine un rapporto indica elementi importati, mantenuti e ignorati.
 
 ## Privacy
 
-I dati restano esclusivamente sul PC e nella cartella scelta. L'applicazione non usa account, servizi cloud o connessioni di rete per le proprie funzioni.
+I dati restano esclusivamente sul PC e nella cartella scelta. L'applicazione non usa account né servizi cloud. L'unica connessione di rete è il controllo degli aggiornamenti su GitHub, che non invia dati personali (solo la versione installata) e si può disattivare nelle impostazioni.

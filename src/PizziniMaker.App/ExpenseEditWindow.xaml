@@ -1,0 +1,68 @@
+<Window x:Class="PizziniMaker.App.ExpenseEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="/PizziniMaker;component/Assets/PizziniMaker.ico"
+        Title="Nota spese" Width="430" MinWidth="360" SizeToContent="Height" ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterOwner" Background="#FFF9EF" FontFamily="Segoe UI" FontSize="13">
+    <StackPanel Margin="22">
+        <TextBlock x:Name="HeaderText" Text="Nuova nota spese" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        <Grid Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Text="Data" VerticalAlignment="Center" Margin="0,0,12,8" FontWeight="SemiBold"/>
+            <DatePicker x:Name="DatePicker" Grid.Column="1" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="1" Text="Categoria" VerticalAlignment="Center" Margin="0,0,12,8" FontWeight="SemiBold"/>
+            <ComboBox x:Name="CategoryComboBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"
+                      DisplayMemberPath="DisplayName" SelectionChanged="Category_SelectionChanged"
+                      FontFamily="Segoe UI, Segoe UI Emoji"/>
+
+            <TextBlock x:Name="AmountLabel" Grid.Row="2" Text="Importo (€)" VerticalAlignment="Center" Margin="0,0,12,8"
+                       FontWeight="SemiBold"/>
+            <TextBox x:Name="AmountTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" Padding="6,4" MaxLength="12"
+                     ToolTip="Importo in euro, es. 12,50"/>
+
+            <TextBlock x:Name="KmLabel" Grid.Row="3" Text="Chilometri" VerticalAlignment="Center" Margin="0,0,12,8"
+                       FontWeight="SemiBold"/>
+            <StackPanel x:Name="KmPanel" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8">
+                <TextBox x:Name="KmTextBox" Padding="6,4" MaxLength="8" TextChanged="Km_TextChanged"
+                         ToolTip="Chilometri percorsi con l'auto propria"/>
+                <TextBlock x:Name="KmRateText" Margin="0,4,0,0" Foreground="#6C665B" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <TextBlock Grid.Row="4" Text="Descrizione" VerticalAlignment="Top" Margin="0,4,12,8" FontWeight="SemiBold"/>
+            <TextBox x:Name="DescriptionTextBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8" Padding="6,4"
+                     MaxLength="200" TextWrapping="Wrap" AcceptsReturn="False" MinHeight="30"
+                     ToolTip="Es. pranzo cantiere Rossi, pedaggio A1, tratta Roma-Firenze"/>
+
+            <TextBlock Grid.Row="5" Text="Allegato" VerticalAlignment="Top" Margin="0,4,12,8" FontWeight="SemiBold"/>
+            <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,8">
+                <TextBlock x:Name="AttachmentText" Text="Nessun allegato (facoltativo)" TextWrapping="Wrap"
+                           Foreground="#6C665B" Margin="0,4,0,6"/>
+                <WrapPanel>
+                    <Button Content="Sfoglia…" Click="Browse_Click" Padding="10,4" Margin="0,0,6,4"/>
+                    <Button x:Name="OpenAttachmentButton" Content="Apri" Click="OpenAttachment_Click" Padding="10,4" Margin="0,0,6,4"/>
+                    <Button x:Name="RemoveAttachmentButton" Content="Rimuovi" Click="RemoveAttachment_Click" Padding="10,4" Margin="0,0,6,4"/>
+                </WrapPanel>
+            </StackPanel>
+        </Grid>
+        <CheckBox x:Name="ReimbursedCheckBox" Margin="0,4,0,0">
+            <TextBlock Text="Già rimborsata" TextWrapping="Wrap"/>
+        </CheckBox>
+        <WrapPanel HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Annulla" MinWidth="90" Margin="0,0,8,0" Padding="12,6" IsCancel="True"/>
+            <Button Content="Salva" MinWidth="90" Padding="12,6" IsDefault="True" Click="Save_Click"
+                    Background="#2F6F4E" Foreground="White" BorderBrush="#2F6F4E"/>
+        </WrapPanel>
+    </StackPanel>
+</Window>

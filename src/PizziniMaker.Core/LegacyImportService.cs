@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.IO.Compression;
 
 namespace PizziniMaker.Core;
 
@@ -28,10 +27,19 @@ public sealed class ImportPreview
 
     public required IReadOnlyList<CustomActivityDefinition> NewCustomActivities { get; init; }
 
-    public bool HasImportableData => NewDays.Count > 0 || LogsToImport.Count > 0 || NewHistoryEntries > 0;
+    /// <summary>Note spese assenti nella cartella attuale (confronto per identificativo).</summary>
+    public IReadOnlyList<ExpenseEntry> NewExpenses { get; init; } = [];
+
+    public bool HasImportableData =>
+        NewDays.Count > 0 || LogsToImport.Count > 0 || NewHistoryEntries > 0 || NewExpenses.Count > 0;
 }
 
-public sealed record ImportOptions(bool ImportSettings = false);
+/// <param name="ImportSettings">Attività personalizzate, nome se mancante, data di inizio controllo più vecchia.</param>
+/// <param name="ImportPreferences">
+/// Nuova installazione: anche identificativo del dipendente, sempre in primo piano, avvio automatico,
+/// tariffa km e controllo aggiornamenti vengono presi dalla versione precedente.
+/// </param>
+public sealed record ImportOptions(bool ImportSettings = false, bool ImportPreferences = false);
 
 public sealed class ImportReport
 {
@@ -48,6 +56,8 @@ public sealed class ImportReport
     public int CustomActivitiesAdded { get; set; }
 
     public bool SettingsUpdated { get; set; }
+
+    public int ExpensesImported { get; set; }
 
     public List<ImportIssue> SkippedItems { get; } = [];
 }
@@ -137,14 +147,14 @@ public static class LegacyImportService
         }
 
         var targetHistory = SafeLoadHistory(target);
-        var newHistoryEntries = sourceHistory.Entries.Count(entry => targetHistory.Find(entry.Number) is null);
+        var newHistoryEntries = sourceHistory.Entries.Count(entry => targetHistory.Find(entry.Type, entry.Number) is null);
 
         AppSettings? sourceSettings = null;
         if (File.Exists(source.SettingsFilePath) || File.Exists(source.SettingsFilePath + ".bak"))
         {
             try
             {
-                sourceSettings = source.LoadSettings();
+                sourceSettings = source.LoadSettings(saveMigration: false);
             }
             catch (InvalidDataException)
             {
@@ -162,8 +172,29 @@ public static class LegacyImportService
             SourceHistory = sourceHistory,
             NewHistoryEntries = newHistoryEntries,
             SourceSettings = sourceSettings,
-            NewCustomActivities = GetNewCustomActivities(sourceSettings, currentSettings)
+            NewCustomActivities = GetNewCustomActivities(sourceSettings, currentSettings),
+            NewExpenses = FindNewExpenses(source, target, issues)
         };
+    }
+
+    private static IReadOnlyList<ExpenseEntry> FindNewExpenses(PizziniStore source, PizziniStore target, List<ImportIssue> issues)
+    {
+        var sourceExpenses = new ExpenseStore(source);
+        var targetExpenses = new ExpenseStore(target);
+        var result = new List<ExpenseEntry>();
+        foreach (var (year, month) in sourceExpenses.EnumerateMonths())
+        {
+            try
+            {
+                var existing = targetExpenses.LoadMonth(year, month).Select(entry => entry.Id).ToHashSet();
+                result.AddRange(sourceExpenses.LoadMonth(year, month).Where(entry => !existing.Contains(entry.Id)));
+            }
+            catch (InvalidDataException)
+            {
+                issues.Add(new ImportIssue(Path.Combine("NoteSpese", $"{year:0000}-{month:00}.json"), "file non leggibile"));
+            }
+        }
+        return result;
     }
 
     public static ImportReport Execute(ImportPreview preview, PizziniStore target, AppSettings currentSettings, ImportOptions options)
@@ -175,7 +206,7 @@ public static class LegacyImportService
         var root = ResolveSourceRoot(preview.SourceRoot, target);
         var source = new PizziniStore(root, createDirectories: false);
 
-        var report = new ImportReport { BackupPath = CreateBackup(target) };
+        var report = new ImportReport { BackupPath = DataBackup.Create(target, "Pre-import") };
         report.KeptDays.AddRange(preview.ConflictingDays);
         report.SkippedItems.AddRange(preview.InvalidItems);
 
@@ -210,8 +241,26 @@ public static class LegacyImportService
         target.SaveHistory(history);
         report.HistoryEntriesAdded = history.Entries.Count - before;
 
+        var sourceExpenses = new ExpenseStore(source);
+        report.ExpensesImported = new ExpenseStore(target).ImportEntries(preview.NewExpenses,
+            entry => sourceExpenses.GetAttachmentPath(entry));
+
         if (options.ImportSettings && preview.SourceSettings is { } sourceSettings)
         {
+            if (options.ImportPreferences)
+            {
+                // Nuova installazione: la nuova cartella prende identità e preferenze della precedente.
+                currentSettings.EmployeeId = sourceSettings.EmployeeId;
+                currentSettings.AlwaysOnTop = sourceSettings.AlwaysOnTop;
+                currentSettings.LaunchAtStartup = sourceSettings.LaunchAtStartup;
+                currentSettings.CheckUpdatesAtStartup = sourceSettings.CheckUpdatesAtStartup;
+                if (currentSettings.KmRateCents <= 0)
+                {
+                    currentSettings.KmRateCents = sourceSettings.KmRateCents;
+                }
+                report.SettingsUpdated = true;
+            }
+
             foreach (var activity in GetNewCustomActivities(sourceSettings, currentSettings))
             {
                 currentSettings.CustomActivities.Add(activity);
@@ -242,42 +291,7 @@ public static class LegacyImportService
     }
 
     /// <summary>Crea un archivio ZIP con i dati attuali prima dell'importazione.</summary>
-    public static string CreateBackup(PizziniStore target)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        Directory.CreateDirectory(target.BackupDirectory);
-        var path = Path.Combine(target.BackupDirectory,
-            $"Pre-import-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.zip");
-        for (var suffix = 2; File.Exists(path); suffix++)
-        {
-            path = Path.Combine(target.BackupDirectory,
-                $"Pre-import-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}-{suffix}.zip");
-        }
-
-        using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
-        foreach (var directory in new[] { target.DataDirectory, target.LogDirectory })
-        {
-            if (!Directory.Exists(directory))
-            {
-                continue;
-            }
-
-            foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
-            {
-                archive.CreateEntryFromFile(file, Path.GetRelativePath(target.RootDirectory, file).Replace('\\', '/'));
-            }
-        }
-
-        foreach (var file in new[] { target.SettingsFilePath, target.HistoryFilePath })
-        {
-            if (File.Exists(file))
-            {
-                archive.CreateEntryFromFile(file, Path.GetFileName(file));
-            }
-        }
-
-        return path;
-    }
+    public static string CreateBackup(PizziniStore target) => DataBackup.Create(target, "Pre-import");
 
     /// <summary>
     /// Verifica la cartella scelta. Accetta anche la sottocartella <c>Dati</c> e risale alla cartella principale.

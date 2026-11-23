@@ -11,6 +11,8 @@ public interface ISettingsActions
 
     /// <summary>Esegue l'importazione; restituisce true se le impostazioni sono state modificate.</summary>
     bool ImportLegacyData(Window owner);
+
+    void ShowUpdateWindow(Core.ReleaseInfo? knownRelease = null);
 }
 
 public partial class SettingsWindow : Window
@@ -29,14 +31,21 @@ public partial class SettingsWindow : Window
         TrackingDatePicker.SelectedDate = settings.TrackingStartDate.ToDateTime(TimeOnly.MinValue);
         TopmostCheckBox.IsChecked = settings.AlwaysOnTop;
         StartupCheckBox.IsChecked = settings.LaunchAtStartup;
+        UpdatesCheckBox.IsChecked = settings.CheckUpdatesAtStartup;
+        ShowKmRate(settings.KmRateCents);
         UpdateCustomActivitiesSummary();
+        Title = $"Impostazioni - PizziniMaker {AppVersion.Display}";
+        VersionText.Text = $"PizziniMaker {AppVersion.Display} · {AppVersion.Credits}";
 
         if (initialSetup)
         {
-            Title = "Benvenuto in PizziniMaker";
+            Title = $"Benvenuto in PizziniMaker {AppVersion.Display}";
             EmployeeTextBox.Focus();
         }
     }
+
+    private void ShowKmRate(int cents) =>
+        KmRateTextBox.Text = cents > 0 ? (cents / 100m).ToString("0.00##") : string.Empty;
 
     private void ManageActivities_Click(object sender, RoutedEventArgs e)
     {
@@ -49,6 +58,8 @@ public partial class SettingsWindow : Window
     }
 
     private void ManageHistory_Click(object sender, RoutedEventArgs e) => _actions?.ManageWorkCardHistory(this);
+
+    private void CheckUpdates_Click(object sender, RoutedEventArgs e) => _actions?.ShowUpdateWindow();
 
     private void Import_Click(object sender, RoutedEventArgs e)
     {
@@ -69,6 +80,13 @@ public partial class SettingsWindow : Window
         {
             EmployeeTextBox.Text = _settings.EmployeeName;
         }
+        if (KmRateTextBox.Text.Trim().Length == 0)
+        {
+            ShowKmRate(_settings.KmRateCents);
+        }
+        TopmostCheckBox.IsChecked = _settings.AlwaysOnTop;
+        StartupCheckBox.IsChecked = _settings.LaunchAtStartup;
+        UpdatesCheckBox.IsChecked = _settings.CheckUpdatesAtStartup;
         var importedStart = _settings.TrackingStartDate.ToDateTime(TimeOnly.MinValue);
         if (TrackingDatePicker.SelectedDate is not DateTime selected || importedStart < selected)
         {
@@ -94,7 +112,19 @@ public partial class SettingsWindow : Window
             return;
         }
 
+        var kmRateCents = 0L;
+        if (KmRateTextBox.Text.Trim().Length > 0 &&
+            (!ExpenseCalculator.TryParseEuro(KmRateTextBox.Text, out kmRateCents) || kmRateCents > 1000))
+        {
+            MessageBox.Show(this, "Indicare la tariffa €/km con un numero, es. 0,42.", "Impostazioni",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            KmRateTextBox.Focus();
+            return;
+        }
+
         _settings.EmployeeName = employeeName;
+        _settings.KmRateCents = (int)kmRateCents;
+        _settings.CheckUpdatesAtStartup = UpdatesCheckBox.IsChecked == true;
         _settings.TrackingStartDate = DateOnly.FromDateTime(trackingDate);
         _settings.AlwaysOnTop = TopmostCheckBox.IsChecked == true;
         _settings.LaunchAtStartup = StartupCheckBox.IsChecked == true;

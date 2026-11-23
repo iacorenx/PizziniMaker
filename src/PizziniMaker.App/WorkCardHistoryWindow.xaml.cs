@@ -8,7 +8,7 @@ namespace PizziniMaker.App;
 
 public sealed record WorkCardHistoryItem(WorkCardHistoryEntry Entry)
 {
-    public string Number => Entry.Number;
+    public string Number => Entry.Reference;
 
     public string CommentText => string.IsNullOrWhiteSpace(Entry.Comment) ? "(senza commento)" : Entry.Comment;
 
@@ -40,14 +40,14 @@ public partial class WorkCardHistoryWindow : Window
     /// <summary>Storico modificato, valido solo se la finestra è stata confermata.</summary>
     public WorkCardHistory Result => _history;
 
-    private void Refresh(string? selectNumber = null)
+    private void Refresh(WorkCardHistoryEntry? select = null)
     {
         var query = SearchTextBox.Text.Trim();
         var entries = query.Length == 0 ? _history.OrderedByRecent() : _history.Search(query, int.MaxValue);
         var items = entries.Select(entry => new WorkCardHistoryItem(entry)).ToArray();
         EntriesList.ItemsSource = items;
-        EntriesList.SelectedItem = items.FirstOrDefault(item => item.Number == selectNumber) ?? items.FirstOrDefault();
-        CountText.Text = _history.Entries.Count == 1 ? "1 scheda" : $"{_history.Entries.Count} schede";
+        EntriesList.SelectedItem = items.FirstOrDefault(item => ReferenceEquals(item.Entry, select)) ?? items.FirstOrDefault();
+        CountText.Text = _history.Entries.Count == 1 ? "1 voce" : $"{_history.Entries.Count} voci";
     }
 
     private void Search_TextChanged(object sender, TextChangedEventArgs e)
@@ -60,21 +60,20 @@ public partial class WorkCardHistoryWindow : Window
 
     private void Add_Click(object sender, RoutedEventArgs e)
     {
-        var window = new WorkCardHistoryEditWindow(null, null) { Owner = this };
+        var window = new WorkCardHistoryEditWindow(ActivityType.Scheda, null, null) { Owner = this };
         if (window.ShowDialog() != true)
         {
             return;
         }
 
-        if (_history.Find(window.Number) is { } existing &&
-            MessageBox.Show(this, $"La scheda {existing.Number} è già nello storico con il commento \"{existing.Comment}\". Sostituire il commento?",
+        if (_history.Find(window.Type, window.Number) is { } existing &&
+            MessageBox.Show(this, $"{existing.Reference} è già nello storico con il commento \"{existing.Comment}\". Sostituire il commento?",
                 "Storico schede", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
         {
             return;
         }
 
-        _history.Upsert(window.Number, window.Comment);
-        Refresh(window.Number);
+        Refresh(_history.Upsert(window.Type, window.Number, window.Comment));
     }
 
     private void Edit_Click(object sender, RoutedEventArgs e) => EditSelected();
@@ -88,26 +87,27 @@ public partial class WorkCardHistoryWindow : Window
             return;
         }
 
-        var window = new WorkCardHistoryEditWindow(selected.Number, selected.Comment) { Owner = this };
+        var window = new WorkCardHistoryEditWindow(selected.Type, selected.Number, selected.Comment) { Owner = this };
         if (window.ShowDialog() != true)
         {
             return;
         }
 
-        if (window.Number != selected.Number)
+        if (window.Type != selected.Type || window.Number != selected.Number)
         {
-            if (_history.Find(window.Number) is not null)
+            if (_history.Find(window.Type, window.Number) is not null)
             {
-                MessageBox.Show(this, $"La scheda {window.Number} è già presente nello storico.", "Storico schede",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, $"{ActivityCatalog.GetWorkCardReference(window.Type, window.Number)} è già presente nello storico.",
+                    "Storico schede", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
+            selected.Type = window.Type;
             selected.Number = window.Number;
         }
 
         selected.Comment = WorkCardHistory.NormalizeComment(window.Comment);
-        Refresh(selected.Number);
+        Refresh(selected);
     }
 
     private void Delete_Click(object sender, RoutedEventArgs e)
@@ -121,7 +121,7 @@ public partial class WorkCardHistoryWindow : Window
             "Le giornate già salvate non vengono modificate.", "Storico schede", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (answer == MessageBoxResult.Yes)
         {
-            _history.Remove(selected.Number);
+            _history.Remove(selected.Type, selected.Number);
             Refresh();
         }
     }

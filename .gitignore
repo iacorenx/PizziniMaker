@@ -4,6 +4,7 @@
 /Log/
 /StoricoSchede.json
 /Backup/
+/NoteSpese/
 *.log
 *.bak
 *.tmp

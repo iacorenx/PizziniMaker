@@ -1,17 +1,29 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using PizziniMaker.Core;
 using MessageBox = System.Windows.MessageBox;
 
 namespace PizziniMaker.App;
 
+public sealed record WorkCardTypeOption(ActivityType Type, string DisplayName);
+
 public partial class WorkCardHistoryEditWindow : Window
 {
-    public WorkCardHistoryEditWindow(string? number, string? comment)
+    private static readonly WorkCardTypeOption[] TypeOptions =
+    [
+        new(ActivityType.Scheda, "Scheda"),
+        new(ActivityType.Mandato, "Mandato"),
+        new(ActivityType.Preventivo, "Preventivo")
+    ];
+
+    public WorkCardHistoryEditWindow(ActivityType type, string? number, string? comment)
     {
         InitializeComponent();
-        Title = number is null ? "Nuova scheda" : $"Modifica scheda {number}";
-        NumberTextBox.Text = number ?? string.Empty;
+        TypeComboBox.ItemsSource = TypeOptions;
+        TypeComboBox.SelectedItem = TypeOptions.FirstOrDefault(option => option.Type == type) ?? TypeOptions[0];
+        Title = number is null ? "Nuovo riferimento" : $"Modifica {ActivityCatalog.GetWorkCardReference(type, number)}";
+        NumberTextBox.Text = number ?? (type == ActivityType.Preventivo ? $"/{DateTime.Today.Year}" : string.Empty);
         CommentTextBox.Text = comment ?? string.Empty;
         if (number is null)
         {
@@ -24,19 +36,33 @@ public partial class WorkCardHistoryEditWindow : Window
         }
     }
 
+    public ActivityType Type => (TypeComboBox.SelectedItem as WorkCardTypeOption)?.Type ?? ActivityType.Scheda;
+
     public string Number { get; private set; } = string.Empty;
 
     public string Comment { get; private set; } = string.Empty;
 
+    private void Type_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        NumberLabel.Text = Type switch
+        {
+            ActivityType.Mandato => "Numero mandato (numero/lettera, es. 123/X)",
+            ActivityType.Preventivo => "Numero preventivo (numero/anno, es. 1234/2026)",
+            _ => "Numero scheda (4 cifre)"
+        };
+    }
+
     private void Number_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
-        e.Handled = !e.Text.All(char.IsAsciiDigit);
+        e.Handled = !e.Text.All(character => char.IsAsciiDigit(character) ||
+            Type != ActivityType.Scheda && (character == '/' || char.IsAsciiLetter(character)));
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        var number = NumberTextBox.Text.Trim();
-        if (!WorkDayValidator.IsValidWorkCardNumber(number))
+        var number = NumberTextBox.Text.Trim().ToUpperInvariant();
+        if (!WorkDayValidator.IsValidWorkCardNumber(Type, number))
         {
-            MessageBox.Show(this, "Il numero di scheda deve contenere esattamente 4 cifre.", "Scheda",
+            var error = WorkDayValidator.GetWorkCardFormatError(Type);
+            MessageBox.Show(this, char.ToUpperInvariant(error[0]) + error[1..], "Storico",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             NumberTextBox.Focus();
             return;

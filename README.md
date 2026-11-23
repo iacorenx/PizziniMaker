@@ -2,7 +2,7 @@
 
 PizziniMaker è un'applicazione desktop portabile per Windows 10 e Windows 11 destinata alla registrazione giornaliera delle ore lavorative. Riprende l'organizzazione e l'aspetto di un piccolo foglio di carta A6 e consente di acquisire, conservare ed esportare le attività svolte.
 
-> **Stato del progetto:** versione 1.2.0 implementata, con commenti e storico delle schede con suggerimenti, ore di viaggio separate, sabato facoltativo, trasferta come qualifica della giornata, importazione da versioni precedenti, attività personalizzate, chiusura a 8 ore, calendario mensile, festività nazionali, logo dedicato e test automatici.
+> **Stato del progetto:** versione 1.3.0 implementata, con attività MANDATO e PREVENTIVO, note spese con allegati e chilometri, stampa/PDF/Word dei giorni in foglietti A6, aggiornamento da GitHub dal menu dell'icona, importazione automatica alla prima installazione, commenti e storico con suggerimenti, ore di viaggio separate, sabato facoltativo, trasferta, attività personalizzate, chiusura a 8 ore, calendario mensile, festività nazionali e test automatici. Evoluzione multi-dipendente: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Obiettivi
 
@@ -20,6 +20,14 @@ PizziniMaker è un'applicazione desktop portabile per Windows 10 e Windows 11 de
 - Applicazione richiamabile dall'area di notifica di Windows.
 - Opzione per mantenere la finestra sempre in primo piano.
 - Nessun servizio in background separato, database server o componente cloud.
+- Menu dell'icona (tasto destro): apertura, stampa giorni, cartella log, **Verifica aggiornamenti…**, versione installata con crediti, uscita.
+
+### Aggiornamenti e installazione
+
+- Le versioni sono pubblicate come release GitHub del repository pubblico `iacorenx/PizziniMaker` con due file: `PizziniMaker-X.Y.Z-win-x64.zip` e `PizziniMaker-X.Y.Z-win-x64.zip.sha256`.
+- **Verifica aggiornamenti…** interroga `api.github.com` senza token né dati personali (solo la versione nel campo User-Agent), confronta la versione, mostra le note e, su conferma, scarica lo ZIP, ne verifica lo SHA-256, crea `Backup/Pre-aggiornamento-*.zip`, rinomina l'eseguibile in uso in `PizziniMaker.exe.old`, copia i file del programma e riavvia con `--dopo-aggiornamento`. I file `*.old` sono eliminati all'avvio successivo. Dati, log, note spese, impostazioni e storico non vengono mai sostituiti; in caso di errore i file originali vengono ripristinati.
+- Controllo automatico facoltativo all'avvio, al massimo una volta al giorno, solo con fumetto di avviso.
+- Nuova cartella: al primo avvio vengono cercate versioni precedenti (cartelle sorelle, Desktop, Documenti, profilo, Download) e proposta l'importazione completa, preferenze comprese.
 
 ### Dipendente
 
@@ -49,10 +57,12 @@ Tipi di attività supportati:
 | Attività | Numero scheda | Ore | CAD | Scheda cartacea |
 | --- | --- | --- | --- | --- |
 | `SCHEDA` | Obbligatorio, esattamente 4 cifre | Sì | Sì | Sì |
+| `MANDATO` ✎ | Obbligatorio, numero/lettera (`123/X`, 1–6 cifre e una lettera maiuscola) | Sì | Sì | Sì |
+| `PREVENTIVO` ✉ | Obbligatorio, numero/anno (`1234/2026`, 1–6 cifre e anno a 4 cifre precompilato) | Sì | Sì | Sì |
 | `QU` | No | Sì | No | No |
 | `FERIE/PERMESSO` | No | Sì | No | No |
 | `MALATTIA` | No | Sì | No | No |
-| `INFORTUNIO` | No | Sì | No | No |
+| `INFORTUNIO` ⚠ | No | Sì | No | No |
 | `VIAGGIO` 🚗 | No | Sì, contabilità separata | No | No |
 | Personalizzata | No | Sì | No | No |
 
@@ -115,8 +125,22 @@ Non vengono mostrati avvisi di incompletezza.
 
 - Finestra navigabile con celle da lunedì a domenica e apertura diretta della data selezionata.
 - Verde chiaro per giorni confermati con almeno 8 ore, arancione per giorni obbligatori incompleti e numero rosso per le festività.
-- Indicatori 🏝️ per ferie/permesso, farmacia per malattia, `€€` per straordinario, 🚗 per viaggio, 🧳 per trasferta e icone delle attività personalizzate.
-- Riepilogo di giorni e ore per ferie/permesso, malattia, straordinario, viaggio, giorni di trasferta e ore necessarie a completare i giorni mancanti.
+- Indicatori 🏝️ per ferie/permesso, farmacia per malattia, ⚠ per infortunio, `€` per straordinario, 🚗 per viaggio, 🧳 per trasferta e icone delle attività personalizzate.
+- Riepilogo di giorni e ore per ferie/permesso, malattia, infortunio, straordinario, viaggio, giorni di trasferta e ore necessarie a completare i giorni mancanti.
+
+### Note spese
+
+- Voci per pasto, viaggio (biglietti, pedaggi, parcheggi), chilometri auto, alloggio e altro, con data, importo in centesimi, descrizione, stato **da rimborsare/rimborsata** e data di rimborso.
+- Chilometri: importo = km × tariffa €/km delle impostazioni, copiata nella spesa al momento dell'inserimento.
+- Allegato facoltativo (foto o PDF), copiato in `NoteSpese/Allegati/AAAA-MM/`; l'originale non viene modificato.
+- File `NoteSpese/AAAA-MM.json` con scrittura atomica; riepilogo mensile con totali da rimborsare e rimborsati.
+
+### Stampa, PDF e Word
+
+- Selezione dei giorni da un calendario con spunta per ogni giorno (selezione mantenuta tra i mesi).
+- Ogni giorno è un foglietto A6 (105 × 148,5 mm) con bordo tratteggiato rientrato di 3 mm, quattro per A4 verticale.
+- Intestazione con nome del dipendente in alto a sinistra e data `GG/MM/AAAA` in alto a destra; elenco attività in 12 pt; quadratino con **V** per le attività registrate su carta, vuoto per quelle non registrate; totale e indicazione BOZZA per i giorni non confermati.
+- Stessa disposizione per stampa (WPF), PDF (PDFsharp 6.2.4, licenza MIT) e Word `.docx` (Open XML SDK, licenza MIT).
 
 ### Importazione da una versione precedente
 
@@ -149,8 +173,8 @@ Lo stile richiama un foglio di carta:
 - **Linguaggio/UI:** C# e WPF.
 - **Runtime:** .NET 10 LTS, pubblicazione `win-x64` self-contained.
 - **Persistenza:** file JSON locali con scrittura atomica e backup contro file incompleti o danneggiati.
-- **Esportazione:** file di testo `.txt` con codifica UTF-8.
-- **Distribuzione:** cartella portabile compressa in formato ZIP, senza installer e senza necessità di installare .NET.
+- **Esportazione:** file di testo `.txt` con codifica UTF-8; stampa, PDF e Word dei giorni selezionati.
+- **Distribuzione:** cartella portabile compressa in formato ZIP, senza installer e senza necessità di installare .NET; aggiornamento integrato dalle release GitHub.
 
 La pubblicazione self-contained aumenta la dimensione su disco rispetto a un eseguibile dipendente dal runtime, ma semplifica il trasferimento e l'avvio su un altro PC.
 
@@ -165,8 +189,11 @@ PizziniMaker/
 │  └─ giornate e bozze locali
 ├─ Log/
 │  └─ log testuali giornalieri
+├─ NoteSpese/
+│  ├─ AAAA-MM.json
+│  └─ Allegati/AAAA-MM/ copie delle ricevute
 └─ Backup/
-   └─ archivi ZIP creati prima delle importazioni
+   └─ archivi ZIP creati prima di importazioni e aggiornamenti
 ```
 
 Per trasferire applicazione, impostazioni e storico è sufficiente copiare l'intera cartella. Se viene spostata dopo aver attivato l'avvio automatico, il collegamento di avvio deve essere riattivato dall'applicazione.
@@ -193,12 +220,14 @@ Il formato definitivo dovrà mantenere facilmente riconoscibili numero di scheda
 
 ### Impostazioni
 
-- nome del dipendente;
+- identificativo stabile del dipendente (GUID, dalla 1.3.0) e nome del dipendente;
 - data di inizio controllo dei giorni mancanti;
 - preferenza di avvio automatico;
 - preferenza sempre in primo piano;
+- controllo aggiornamenti all'avvio e data dell'ultimo controllo;
+- tariffa €/km per le note spese;
 - attività personalizzate;
-- versione dello schema (3 dalla 1.2.0).
+- versione dello schema (4 dalla 1.3.0; la migrazione crea l'identificativo e rimuove eventuali attività personalizzate MANDATO/PREVENTIVO).
 
 ### Giornata
 
@@ -207,7 +236,8 @@ Il formato definitivo dovrà mantenere facilmente riconoscibili numero di scheda
 - trasferta (pernotto fuori sede);
 - elenco delle righe;
 - data e ora dell'ultima modifica;
-- data e ora della conferma.
+- data e ora della conferma;
+- revisione (contatore dei salvataggi, base per la futura sincronizzazione).
 
 ### Riga di attività
 
@@ -269,12 +299,15 @@ powershell -ExecutionPolicy Bypass -File scripts\publish-portable.ps1
 Lo script esegue i test e crea:
 
 - `artifacts\portable\PizziniMaker\PizziniMaker.exe`;
-- `artifacts\PizziniMaker-win-x64.zip`;
-- hash SHA-256 dello ZIP, mostrato al termine.
+- `artifacts\PizziniMaker-<versione>-win-x64.zip`;
+- `artifacts\PizziniMaker-<versione>-win-x64.zip.sha256` (formato `HASH  nomefile`), letto dall'aggiornamento automatico.
+
+Con `-Release` crea anche la release GitHub `v<versione>` con i due file (`gh release create`); senza il parametro non pubblica nulla.
 
 ## Possibili evoluzioni future
 
-- Esportazione mensile CSV o PDF.
+- Client per più dipendenti e applicazione per la segreteria: vedere [docs/ROADMAP.md](docs/ROADMAP.md).
+- Esportazione mensile CSV.
 - Calendario aziendale per festività e chiusure.
 - Backup automatico pianificato su una cartella scelta dall'utente.
 - Scelta di valori massimi diversi per le ore delle singole righe.
@@ -284,7 +317,7 @@ Lo script esegue i test e crea:
 
 Il repository contiene codice e documentazione, non dati reali dei dipendenti. Sono esclusi tramite `.gitignore`:
 
-- `Impostazioni.json`;
-- contenuto di `Dati/` e `Log/`;
+- `Impostazioni.json` e `StoricoSchede.json`;
+- contenuto di `Dati/`, `Log/`, `NoteSpese/` e `Backup/`;
 - pacchetti pubblicati, eseguibili compilati e file temporanei;
 - directory e file locali degli strumenti di sviluppo.

@@ -126,7 +126,7 @@ public sealed class PizziniStoreTests : IDisposable
 
         var settings = _store.LoadSettings();
 
-        Assert.Equal(3, settings.SchemaVersion);
+        Assert.Equal(AppSettings.CurrentSchemaVersion, settings.SchemaVersion);
         Assert.Contains(settings.CustomActivities, activity => activity.Name == "FORMAZIONE");
         Assert.DoesNotContain(settings.CustomActivities, activity => activity.Name == "TRASFERTA");
     }
@@ -140,7 +140,7 @@ public sealed class PizziniStoreTests : IDisposable
 
         var settings = _store.LoadSettings();
 
-        Assert.Equal(3, settings.SchemaVersion);
+        Assert.Equal(AppSettings.CurrentSchemaVersion, settings.SchemaVersion);
         Assert.Equal(["CANTIERE"], settings.CustomActivities.Select(activity => activity.Name));
     }
 

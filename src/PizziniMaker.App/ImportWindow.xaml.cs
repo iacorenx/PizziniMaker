@@ -9,10 +9,15 @@ public partial class ImportWindow : Window
     private const int MaximumListedItems = 30;
 
     /// <summary>Anteprima: mostra cosa verrà importato e chiede conferma.</summary>
-    public ImportWindow(ImportPreview preview)
+    public ImportWindow(ImportPreview preview, bool newInstallation = false)
     {
         ArgumentNullException.ThrowIfNull(preview);
         InitializeComponent();
+        if (newInstallation)
+        {
+            HeaderText.Text = "Importa dalla versione precedente";
+            ImportSettingsCheckBox.IsChecked = true;
+        }
         SourceText.Text = $"Cartella di origine: {preview.SourceRoot}";
         DetailsText.Text = BuildPreviewText(preview);
 
@@ -23,6 +28,12 @@ public partial class ImportWindow : Window
             ImportSettingsLabel.Text = "Importa anche le attività personalizzate (" +
                 string.Join(", ", preview.NewCustomActivities.Select(activity => activity.Name)) +
                 ") e la data di inizio controllo (se precedente)";
+        }
+
+        if (newInstallation && hasSettings)
+        {
+            ImportSettingsLabel.Text = "Importa anche nome del dipendente, preferenze (sempre in primo piano, avvio con Windows, " +
+                "aggiornamenti), tariffa €/km, attività personalizzate e data di inizio controllo";
         }
 
         if (!preview.HasImportableData && preview.NewCustomActivities.Count == 0)
@@ -60,6 +71,7 @@ public partial class ImportWindow : Window
         AppendDates(text, preview.ConflictingDays);
         text.AppendLine($"📄 Log da importare: {preview.LogsToImport.Count}");
         text.AppendLine($"🔢 Nuove schede nello storico: {preview.NewHistoryEntries}");
+        text.AppendLine($"🧾 Note spese da importare: {preview.NewExpenses.Count}");
         if (preview.SourceSettings is null)
         {
             text.AppendLine("⚙ Impostazioni: non trovate nella cartella di origine");
@@ -68,7 +80,7 @@ public partial class ImportWindow : Window
         if (!preview.HasImportableData)
         {
             text.AppendLine();
-            text.AppendLine("Non ci sono giornate, log o schede nuove da importare.");
+            text.AppendLine("Non ci sono giornate, log, schede o note spese nuove da importare.");
         }
         return text.ToString().TrimEnd();
     }
@@ -82,6 +94,7 @@ public partial class ImportWindow : Window
         AppendDates(text, report.KeptDays);
         text.AppendLine($"📄 Log importati: {report.ImportedLogs}");
         text.AppendLine($"🔢 Schede aggiunte allo storico: {report.HistoryEntriesAdded}");
+        text.AppendLine($"🧾 Note spese importate: {report.ExpensesImported}");
         if (report.CustomActivitiesAdded > 0)
         {
             text.AppendLine($"⚙ Attività personalizzate aggiunte: {report.CustomActivitiesAdded}");

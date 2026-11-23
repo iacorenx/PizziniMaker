@@ -18,9 +18,9 @@ public static class LogFormatter
 
         foreach (var entry in day.Entries)
         {
-            if (entry.Type == ActivityType.Scheda)
+            if (entry.Type.HasWorkCard())
             {
-                builder.Append(entry.WorkCardNumber);
+                builder.Append(entry.GetWorkCardReference());
                 var comment = entry.WorkCardComment?.Trim();
                 if (!string.IsNullOrEmpty(comment))
                 {

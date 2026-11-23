@@ -1,0 +1,77 @@
+<Window x:Class="PizziniMaker.App.PrintWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="/PizziniMaker;component/Assets/PizziniMaker.ico"
+        Title="Stampa giorni - PizziniMaker" Width="560" Height="640" MinWidth="440" MinHeight="520"
+        WindowStartupLocation="CenterOwner" Background="#FFF9EF" FontFamily="Segoe UI" FontSize="13">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock TextWrapping="Wrap" Foreground="#6C665B"
+                   Text="Spunta i giorni da stampare o esportare. Ogni giorno è un foglietto A6 con bordo tratteggiato: quattro per foglio A4 verticale."/>
+        <Grid Grid.Row="1" Margin="0,12,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Content="←" Width="32" Click="PreviousMonth_Click" ToolTip="Mese precedente"/>
+            <TextBlock x:Name="MonthText" Grid.Column="1" FontSize="19" FontWeight="SemiBold" TextAlignment="Center"
+                       VerticalAlignment="Center"/>
+            <Button Grid.Column="2" Content="→" Width="32" Click="NextMonth_Click" ToolTip="Mese successivo"/>
+        </Grid>
+        <UniformGrid Grid.Row="2" Columns="7" Margin="0,0,0,3">
+            <TextBlock Text="Lun" TextAlignment="Center" Foreground="#6C665B"/>
+            <TextBlock Text="Mar" TextAlignment="Center" Foreground="#6C665B"/>
+            <TextBlock Text="Mer" TextAlignment="Center" Foreground="#6C665B"/>
+            <TextBlock Text="Gio" TextAlignment="Center" Foreground="#6C665B"/>
+            <TextBlock Text="Ven" TextAlignment="Center" Foreground="#6C665B"/>
+            <TextBlock Text="Sab" TextAlignment="Center" Foreground="#6C665B"/>
+            <TextBlock Text="Dom" TextAlignment="Center" Foreground="#C62828"/>
+        </UniformGrid>
+        <ItemsControl x:Name="DaysGrid" Grid.Row="3">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="7" Rows="6"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="2" BorderBrush="#E0DCD2" BorderThickness="1" CornerRadius="3" Background="{Binding Background}"
+                            Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" ToolTip="{Binding ToolTip}">
+                        <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsEnabled}" Margin="4"
+                                  VerticalContentAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="{Binding DayNumber}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="#6C665B"/>
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <WrapPanel Grid.Row="4" Margin="0,8,0,0">
+            <Button Content="Seleziona confermati del mese" Click="SelectConfirmed_Click" Padding="10,4" Margin="0,0,6,4"/>
+            <Button Content="Deseleziona mese" Click="ClearMonth_Click" Padding="10,4" Margin="0,0,6,4"/>
+            <Button Content="Deseleziona tutto" Click="ClearAll_Click" Padding="10,4" Margin="0,0,6,4"/>
+        </WrapPanel>
+        <Border Grid.Row="5" Margin="0,6,0,0" Background="#F3EEE3" BorderBrush="#D8CEBC" BorderThickness="1" Padding="10" CornerRadius="3">
+            <TextBlock x:Name="SelectionText" TextWrapping="Wrap"/>
+        </Border>
+        <WrapPanel Grid.Row="6" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button x:Name="PreviewButton" Content="Anteprima" Click="Preview_Click" Padding="12,6" Margin="0,0,8,4"/>
+            <Button x:Name="PdfButton" Content="Salva PDF…" Click="SavePdf_Click" Padding="12,6" Margin="0,0,8,4"/>
+            <Button x:Name="WordButton" Content="Salva Word…" Click="SaveWord_Click" Padding="12,6" Margin="0,0,8,4"/>
+            <Button x:Name="PrintButton" Content="Stampa…" Click="Print_Click" Padding="12,6" Margin="0,0,8,4"
+                    Background="#2F6F4E" Foreground="White" BorderBrush="#2F6F4E"/>
+            <Button Content="Chiudi" Click="Close_Click" Padding="12,6" Margin="0,0,0,4" IsCancel="True"/>
+        </WrapPanel>
+    </Grid>
+</Window>

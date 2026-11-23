@@ -50,6 +50,8 @@ public sealed class MonthlyCalendarViewModel : ObservableObject
     public int MissingDays { get => _missingDays; private set => SetProperty(ref _missingDays, value); }
     public string TravelSummary { get => _travelSummary; private set => SetProperty(ref _travelSummary, value); }
     public string TrasfertaSummary { get => _trasfertaSummary; private set => SetProperty(ref _trasfertaSummary, value); }
+    private string _injurySummary = string.Empty;
+    public string InjurySummary { get => _injurySummary; private set => SetProperty(ref _injurySummary, value); }
 
     public void PreviousMonth()
     {
@@ -85,8 +87,9 @@ public sealed class MonthlyCalendarViewModel : ObservableObject
         }
 
         LeaveSummary = $"🏝️ Ferie/permesso: {FormatDayCount(report.LeaveDays)} · {ActivityCatalog.FormatDuration(report.LeaveMinutes)}";
-        SickSummary = $"✚ Malattia: {FormatDayCount(report.SickDays)} · {ActivityCatalog.FormatDuration(report.SickMinutes)}";
-        OvertimeSummary = $"€€ Straordinario: {FormatDayCount(report.OvertimeDays)} · {ActivityCatalog.FormatDuration(report.OvertimeMinutes)}";
+        SickSummary = $"{ActivityCatalog.MalattiaIcon} Malattia: {FormatDayCount(report.SickDays)} · {ActivityCatalog.FormatDuration(report.SickMinutes)}";
+        InjurySummary = $"{ActivityCatalog.InfortunioIcon} Infortunio: {FormatDayCount(report.InjuryDays)} · {ActivityCatalog.FormatDuration(report.InjuryMinutes)}";
+        OvertimeSummary = $"{ActivityCatalog.OvertimeIcon} Straordinario: {FormatDayCount(report.OvertimeDays)} · {ActivityCatalog.FormatDuration(report.OvertimeMinutes)}";
         MissingSummary = $"! Da completare: {FormatDayCount(report.MissingDays)} · {ActivityCatalog.FormatDuration(report.MissingMinutes)} mancanti";
         MissingDays = report.MissingDays;
         TravelSummary = $"{ActivityCatalog.TravelIcon} Viaggio: {FormatDayCount(report.TravelDays)} · {ActivityCatalog.FormatDuration(report.TravelMinutes)}";

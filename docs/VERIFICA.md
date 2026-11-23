@@ -1,48 +1,62 @@
-# Rapporto di verifica - PizziniMaker 1.2.0
+# Rapporto di verifica - PizziniMaker 1.3.0
 
-Data: 21/11/2026
+Data: 23/11/2026
 
 ## Ambiente
 
-- Windows 10, versione sistema 10.0.19045.
+- Windows 10, versione sistema 10.0.19045, scala dello schermo al 100%.
 - .NET SDK 10.0.404.
-- Target applicazione: `net10.0-windows`, pubblicazione `win-x64` self-contained.
-- Versione file e prodotto: `1.2.0.0` / `1.2.0`.
+- Target applicazione: `net10.0-windows`, pubblicazione `win-x64` self-contained, file singolo.
+- Versione file e prodotto: `1.3.0.0` / `1.3.0`.
+- Nuove dipendenze: PDFsharp **6.2.4** (MIT; la 6.5 è AGPL e non va usata) e DocumentFormat.OpenXml 3.5.1 (MIT).
 
 ## Verifiche automatiche
 
 - Compilazione Debug e Release completata senza errori né avvisi.
-- **88 test xUnit superati**, nessun test fallito o ignorato.
-- Storico schede: `Bac` → `8092 Baccane`, ricerca per numero senza distinzione tra maiuscole e minuscole, ordinamento per pertinenza e poi per uso recente, un commento per numero, fusione e ricostruzione dalle giornate confermate.
-- Commenti: persistenza nella giornata, scrittura nel log (`8092 - Baccane - 8 ore (CAD) - Carta: no`), compatibilità con i JSON 1.1.0 privi del campo, storico aggiornato alla conferma.
-- Viaggio: conta per le 8 ore, non diventa straordinario, riga `Viaggio:` nel log e totali mensili.
-- Sabato: confermabile sotto le 8 ore, ore non di viaggio interamente straordinario, giorno completo in calendario.
-- Trasferta: riga `Trasferta: sì` nel log, giorni contati nel riepilogo mensile, migrazione delle impostazioni v2 → v3 che rimuove la voce TRASFERTA e giornate storiche con riga TRASFERTA invariate.
-- Importazione: giornate assenti importate, conflitti con giornata attuale mantenuta, log solo per giornate importate, recupero da `.bak`, JSON corrotti e nomi non validi segnalati, backup ZIP, cartella di origine non modificata, impostazioni importate solo su richiesta, rifiuto della cartella in esecuzione e di cartelle annidate, selezione della sottocartella `Dati` accettata.
-- Restano superati i test della 1.1.0: numeri di scheda, completamento a 8 ore, festività, giorni mancanti, calendario, persistenza e recupero da backup.
+- **153 test xUnit superati** (88 della 1.2.0 + 65 nuovi), nessun test fallito o ignorato.
+- MANDATO e PREVENTIVO: formati `123/X` e `1234/2026` validi e non validi (minuscole, lettere doppie, anno a 2 cifre, barre multiple), composizione e scomposizione del riferimento, messaggi d'errore per tipo, valori dell'enum in coda (7 e 8).
+- Storico: voci separate per tipo e numero, ricerca filtrata per tipo, `StoricoSchede.json` della 1.2.0 letto come Scheda.
+- Log: `MANDATO 123/X - Bianchi - 4 ore (CAD) - Carta: sì`.
+- Impostazioni: migrazione 3 → 4 salvata subito (identificativo del dipendente stabile tra due letture), attività personalizzate MANDATO/PREVENTIVO rimosse; l'analisi di importazione non scrive nella cartella di origine.
+- Calendario: icona ⚠ e totali per INFORTUNIO, straordinario con `€` singolo.
+- Note spese: importi in formato italiano, km × tariffa, validazione, file mensili, spostamento tra mesi, allegato copiato ed eliminato con la spesa, stato rimborso con data, importazione con allegati, backup ZIP che include `NoteSpese/`.
+- Nuova installazione: ricerca della cartella precedente sorella, importazione di nome, preferenze, tariffa ed `EmployeeId`.
+- Stampa: contenuto del foglietto (nome in maiuscolo, data, righe, quadratino con V solo per i tipi con scheda cartacea, totale, BOZZA), 4 foglietti per pagina, misure A6 su A4, ritorno a capo del testo.
+- Aggiornamenti: lettura dei tag (`v1.3.0`), confronto a tre cifre, analisi della risposta GitHub (pacchetto e `.sha256`, link non HTTPS scartati, pre-release ignorate), formati del file `.sha256`, installazione che sostituisce il programma ma non i dati, pulizia dei file `.old`, rifiuto di pacchetti senza eseguibile.
 
 ## Verifica dell'interfaccia
 
-Applicazione avviata realmente (sabato 21/11/2026) in una cartella di prova con dati 1.1.0 simulati.
+Applicazione avviata realmente in cartelle di prova con dati fittizi (dipendente "Mario Rossi").
 
-- Finestra principale da **410 × 620 pixel**: casella **🧳 Trasferta**, avviso del sabato facoltativo, riga Scheda con campo **Commento** e totali con straordinario/viaggio su righe separate.
-- Digitando `bac` compaiono `8100 — Baccane cantiere nord` e `8092 — Baccane` (più recente prima); con **↓** e **Invio** la riga diventa `8092` / `Baccane` ed è salvata nel JSON.
-- Conferma del sabato con 0,5 ore: finestra **Sabato facoltativo** senza proposta di completamento; log con `Straordinario: 0,5 ore`.
-- Impostazioni: voce TRASFERTA rimossa dal catalogo; riquadri **Storico schede** e **Versione precedente** visibili.
-- Gestione storico: elenco ordinato per ultimo uso, con commento e numero di utilizzi.
-- Importazione da cartella 1.1.0: anteprima con 2 giornate nuove, 1 conflitto mantenuto, 1 log, 1 scheda nuova e 1 file corrotto ignorato; rapporto finale e backup `Backup\Pre-import-*.zip` creati.
-- Calendario: icone 🚗 e 🧳, vecchia riga TRASFERTA ✈️ invariata, sabato confermato verde, legenda e riepilogo su più righe senza testi tagliati.
-- Dialoghi di conferma, completamento e modifica ad altezza automatica (`SizeToContent`), pulsanti con larghezza minima.
+- Finestra principale: nuovi pulsanti 🧾 (note spese, con numero di spese del giorno) e 🖨 (stampa) accanto a 📅 e ⚙.
+- Elenco attività: ✎ MANDATO, ✉ PREVENTIVO e **⚠ INFORTUNIO visibili** insieme alle altre icone.
+- MANDATO: caselle `123` / `X` (la `x` digitata diventa maiuscola), salvato come `123/X` (tipo 7). PREVENTIVO: anno `2026` precompilato, salvato come tipo 8.
+- Note spese: inserimento di un pasto da 12,50 €, elenco mensile con stato "Da rimborsare" e riepilogo; finestra di modifica con categoria, importo, descrizione, allegato facoltativo e "Già rimborsata".
+- Stampa: calendario con spunte (verde confermato, giallo bozza), "Seleziona confermati del mese", conteggio giorni e fogli A4, anteprima con foglietti tratteggiati.
+- Impostazioni: titolo con versione, tariffa €/km, controllo aggiornamenti all'avvio, riquadro versione con **Verifica aggiornamenti…**.
+- Aggiornamenti: contatto con GitHub riuscito; risposta "Non risultano versioni pubblicate" (repository ancora privato e senza release al momento della prova).
+- Prima installazione in una cartella accanto a una precedente: proposta di importazione con percorso, nome e data di ultimo utilizzo; anteprima con 2 giornate, 1 log, 1 scheda, 1 nota spese; dopo l'importazione nome e identificativo del dipendente coincidono con la cartella precedente e si apre direttamente la finestra principale.
 
-## Verifica del logo e del pacchetto
+## Verifica di stampa, PDF e Word
 
-- Nuovo logo con due pizze sovrapposte: cornicione dorato con bruciature, salsa, mozzarella, salame con dettagli, basilico e fetta mancante.
-- Icone da 16 e 32 pixel disegnate in versione semplificata (una pizza con fetta mancante), riconoscibili nell'area di notifica.
-- ZIP controllato: eseguibile, guida utente e cartelle `Dati` e `Log` vuote; nessun dato di prova incluso.
-- Dimensione eseguibile: circa 78 MB.
-- Dimensione ZIP: circa 72 MB.
-- SHA-256 finale: `E99D3754D1E7114A7D99E1FA2680603A7FF8001026D0022993850C3EED2FE9F5`.
+- Pagina di stampa WPF e PDF generati con 5 giorni: 2 pagine A4, foglietti A6 2 × 2 con bordo tratteggiato, nome in alto a sinistra, data in alto a destra, righe lunghe a capo, quadratini con V e vuoti, totale con viaggio/straordinario/trasferta/BOZZA. PDF con testo selezionabile e carattere Segoe UI incorporato.
+- Documento Word: **valido per il validatore Open XML (0 errori)**; non è stato aperto in Word perché sul PC di prova non sono installati né Word né LibreOffice.
+
+## Verifica del pacchetto e dell'aggiornamento
+
+- ZIP controllato: `PizziniMaker.exe`, `GUIDA_UTENTE.md` e cartelle `Dati` e `Log` vuote; nessun dato di prova incluso.
+- Aggiornamento simulato con lo ZIP reale su una cartella 1.2.0 con dati: SHA-256 verificato, sostituiti solo `PizziniMaker.exe` e `GUIDA_UTENTE.md`, `Impostazioni.json`, giornate e log invariati, vecchio eseguibile conservato come `.old`.
+- Dimensione eseguibile: circa 87 MB; ZIP: circa 81 MB.
+- SHA-256: `7AFE3C56F3493C6401C1D200C4D541FAEC7576962F5E6929138CC0F54B70FDF9`.
+
+## Controllo privacy per la pubblicazione del repository
+
+- Nessun token, password, chiave o percorso assoluto nei file tracciati; nessun file di dati (`Dati/`, `Log/`, `Impostazioni.json`, `StoricoSchede.json`, `Backup/`, `NoteSpese/`) mai presente nello storico Git.
+- Dati personali visibili: nome e azienda nei crediti (voluti) e **indirizzo e-mail dell'autore nei metadati dei commit**.
 
 ## Limiti della verifica
 
-Il test reale è stato eseguito su Windows 10 al 100% di scala. Le finestre di dialogo si adattano al contenuto, ma la resa con scala del testo al 125% o 150% non è stata provata direttamente. Il menu dell'area di notifica con i crediti è stato verificato nel codice ma non aperto con il mouse durante il test. Il pacchetto non è firmato digitalmente.
+- Aggiornamento completo da una release GitHub reale (download, riavvio con `--dopo-aggiornamento`) non provato: richiede repository pubblico e una release.
+- Menu dell'area di notifica non aperto con il mouse; le stesse funzioni sono state provate dalle finestre.
+- Stampa su stampante fisica non provata (verificata l'anteprima e il documento generato).
+- Scala dello schermo al 125% e 150% non provata. Pacchetto non firmato digitalmente.

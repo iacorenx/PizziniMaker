@@ -1,0 +1,33 @@
+<Window x:Class="PizziniMaker.App.UpdateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="/PizziniMaker;component/Assets/PizziniMaker.ico"
+        Title="Aggiornamenti - PizziniMaker" Width="480" Height="460" MinWidth="380" MinHeight="300"
+        WindowStartupLocation="CenterScreen" Background="#FFF9EF" FontFamily="Segoe UI" FontSize="13"
+        Loaded="Window_Loaded" Closing="Window_Closing">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="HeaderText" Text="Verifica aggiornamenti" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        <TextBlock x:Name="StatusText" Grid.Row="1" Margin="0,10,0,10" TextWrapping="Wrap"/>
+        <Border Grid.Row="2" Background="#F3EEE3" BorderBrush="#D8CEBC" BorderThickness="1" CornerRadius="3" Padding="10"
+                x:Name="NotesBorder" Visibility="Collapsed">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock x:Name="NotesText" TextWrapping="Wrap" Foreground="#3D392F"/>
+            </ScrollViewer>
+        </Border>
+        <ProgressBar x:Name="Progress" Grid.Row="3" Height="12" Margin="0,12,0,0" Visibility="Collapsed" Maximum="1"/>
+        <WrapPanel Grid.Row="4" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="ReleasePageButton" Content="Pagina delle versioni" Click="ReleasePage_Click" Padding="12,6" Margin="0,0,8,4"/>
+            <Button x:Name="RetryButton" Content="Riprova" Click="Retry_Click" Padding="12,6" Margin="0,0,8,4" Visibility="Collapsed"/>
+            <Button x:Name="InstallButton" Content="Scarica e installa" Click="Install_Click" Padding="12,6" Margin="0,0,8,4"
+                    Background="#2F6F4E" Foreground="White" BorderBrush="#2F6F4E" Visibility="Collapsed"/>
+            <Button x:Name="CloseButton" Content="Chiudi" MinWidth="90" Padding="12,6" Margin="0,0,0,4" IsCancel="True" Click="Close_Click"/>
+        </WrapPanel>
+    </Grid>
+</Window>

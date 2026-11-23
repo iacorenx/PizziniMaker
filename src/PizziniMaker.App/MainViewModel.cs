@@ -28,6 +28,33 @@ public sealed class MainViewModel : ObservableObject
 
     public WorkCardHistory History => _history;
 
+    public PizziniStore Store => _store;
+
+    private string _dayExpensesBadge = string.Empty;
+    private string _expensesToolTip = "Note spese";
+
+    /// <summary>Numero di spese del giorno mostrato accanto all'icona (vuoto se nessuna).</summary>
+    public string DayExpensesBadge { get => _dayExpensesBadge; private set => SetProperty(ref _dayExpensesBadge, value); }
+
+    public string ExpensesToolTip { get => _expensesToolTip; private set => SetProperty(ref _expensesToolTip, value); }
+
+    public void RefreshExpenses()
+    {
+        try
+        {
+            var expenses = new ExpenseStore(_store).LoadDay(CurrentDate);
+            DayExpensesBadge = expenses.Count > 0 ? expenses.Count.ToString() : string.Empty;
+            ExpensesToolTip = expenses.Count == 0
+                ? "Note spese (pasti, viaggi, chilometri)"
+                : $"Note spese del giorno: {expenses.Count} · {ActivityCatalog.FormatEuro(expenses.Sum(entry => entry.TotalCents))}";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            DayExpensesBadge = "!";
+            ExpensesToolTip = $"Note spese non leggibili: {exception.Message}";
+        }
+    }
+
     public void ReloadHistory()
     {
         try
@@ -193,7 +220,7 @@ public sealed class MainViewModel : ObservableObject
 
         var entry = new ActivityEntry();
         _currentDay.Entries.Add(entry);
-        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged, () => _history));
+        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged, () => _history, _currentDay.Date.Year));
         NotifyTotals();
         SaveCurrentDay();
     }
@@ -279,7 +306,7 @@ public sealed class MainViewModel : ObservableObject
 
         var entry = new ActivityEntry { Type = type, Minutes = missingMinutes, IsCad = false };
         _currentDay.Entries.Add(entry);
-        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged, () => _history));
+        Entries.Add(new ActivityEntryViewModel(entry, Settings.CustomActivities, OnEntryChanged, () => _history, _currentDay.Date.Year));
         NotifyTotals();
         return SaveCurrentDay();
     }
@@ -373,13 +400,14 @@ public sealed class MainViewModel : ObservableObject
         Entries.Clear();
         foreach (var model in day.Entries)
         {
-            var entry = new ActivityEntryViewModel(model, Settings.CustomActivities, OnEntryChanged, () => _history);
+            var entry = new ActivityEntryViewModel(model, Settings.CustomActivities, OnEntryChanged, () => _history, _currentDay.Date.Year);
             entry.SetLocked(day.IsConfirmed || IsDayLocked);
             Entries.Add(entry);
         }
 
         NotifyDayProperties();
         RefreshCalendarStatus();
+        RefreshExpenses();
     }
 
     private void NotifyTotals()

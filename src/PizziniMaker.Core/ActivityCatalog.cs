@@ -29,12 +29,14 @@ public static class ActivityCatalog
         ArgumentNullException.ThrowIfNull(customActivities);
         var options = new List<ActivitySelection>
         {
-            new("Scheda", ActivityType.Scheda, "Scheda", "▤"),
-            new("Viaggio", ActivityType.Viaggio, "VIAGGIO", TravelIcon),
-            new("Qu", ActivityType.Qu, "QU", "◷"),
-            new("FeriePermesso", ActivityType.FeriePermesso, "FERIE/PERMESSO", "🏝️"),
-            new("Malattia", ActivityType.Malattia, "MALATTIA", "✚"),
-            new("Infortunio", ActivityType.Infortunio, "INFORTUNIO", "🩹")
+            Builtin("Scheda", ActivityType.Scheda),
+            Builtin("Mandato", ActivityType.Mandato),
+            Builtin("Preventivo", ActivityType.Preventivo),
+            Builtin("Viaggio", ActivityType.Viaggio),
+            Builtin("Qu", ActivityType.Qu),
+            Builtin("FeriePermesso", ActivityType.FeriePermesso),
+            Builtin("Malattia", ActivityType.Malattia),
+            Builtin("Infortunio", ActivityType.Infortunio)
         };
 
         options.AddRange(customActivities
@@ -51,9 +53,18 @@ public static class ActivityCatalog
         return options;
     }
 
+    private static ActivitySelection Builtin(string key, ActivityType type) =>
+        new(key, type, type.ToDisplayName(), type.GetIcon());
+
+    /// <summary>Attività con numero di riferimento, CAD, commento, storico e registrazione cartacea.</summary>
+    public static bool HasWorkCard(this ActivityType type) =>
+        type is ActivityType.Scheda or ActivityType.Mandato or ActivityType.Preventivo;
+
     public static string ToDisplayName(this ActivityType type) => type switch
     {
         ActivityType.Scheda => "Scheda",
+        ActivityType.Mandato => "MANDATO",
+        ActivityType.Preventivo => "PREVENTIVO",
         ActivityType.Qu => "QU",
         ActivityType.FeriePermesso => "FERIE/PERMESSO",
         ActivityType.Malattia => "MALATTIA",
@@ -67,15 +78,44 @@ public static class ActivityCatalog
         ? entry.CustomActivityName
         : entry.Type.ToDisplayName();
 
-    public static string GetIcon(this ActivityEntry entry) => entry.Type switch
+    /// <summary>Icona dell'attività: fonte unica per elenco a discesa, calendario e stampa.</summary>
+    public static string GetIcon(this ActivityType type) => type switch
     {
-        ActivityType.FeriePermesso => "🏝️",
-        ActivityType.Malattia => "✚",
-        ActivityType.Infortunio => "🩹",
-        ActivityType.Custom => entry.CustomActivityIcon,
+        ActivityType.Scheda => "▤",
+        ActivityType.Mandato => MandatoIcon,
+        ActivityType.Preventivo => PreventivoIcon,
+        ActivityType.Qu => "◷",
+        ActivityType.FeriePermesso => FeriePermessoIcon,
+        ActivityType.Malattia => MalattiaIcon,
+        ActivityType.Infortunio => InfortunioIcon,
         ActivityType.Viaggio => TravelIcon,
         _ => string.Empty
     };
+
+    public static string GetIcon(this ActivityEntry entry) => entry.Type == ActivityType.Custom
+        ? entry.CustomActivityIcon
+        : entry.Type.GetIcon();
+
+    /// <summary>Riferimento leggibile: <c>8092</c>, <c>MANDATO 123/X</c>, <c>PREVENTIVO 1234/2026</c>.</summary>
+    public static string GetWorkCardReference(this ActivityEntry entry) =>
+        GetWorkCardReference(entry.Type, entry.WorkCardNumber);
+
+    public static string GetWorkCardReference(ActivityType type, string number) => type == ActivityType.Scheda
+        ? number
+        : $"{type.ToDisplayName()} {number}";
+
+    public const string MandatoIcon = "✎";
+
+    public const string PreventivoIcon = "✉";
+
+    public const string FeriePermessoIcon = "🏝️";
+
+    public const string MalattiaIcon = "✚";
+
+    /// <summary>Simbolo presente nei caratteri di Windows 10 (l'emoji 🩹 non veniva mostrata).</summary>
+    public const string InfortunioIcon = "⚠";
+
+    public const string OvertimeIcon = "€";
 
     public const string TravelIcon = "🚗";
 
@@ -83,7 +123,8 @@ public static class ActivityCatalog
 
     /// <summary>Nomi non utilizzabili per le attività personalizzate.</summary>
     public static IReadOnlyList<string> ReservedActivityNames { get; } =
-        ["SCHEDA", "QU", "FERIE/PERMESSO", "MALATTIA", "INFORTUNIO", "VIAGGIO", AppSettings.LegacyTrasfertaActivityName];
+        ["SCHEDA", "MANDATO", "PREVENTIVO", "QU", "FERIE/PERMESSO", "MALATTIA", "INFORTUNIO", "VIAGGIO",
+            AppSettings.LegacyTrasfertaActivityName];
 
     public static string FormatHours(int minutes) => (minutes / 60m).ToString("0.#", ItalianCulture);
 
@@ -95,4 +136,10 @@ public static class ActivityCatalog
 
     public static string FormatDate(DateOnly date) =>
         date.ToDateTime(TimeOnly.MinValue).ToString("dddd dd/MM/yyyy", ItalianCulture);
+
+    public static string FormatShortDate(DateOnly date) =>
+        date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+    public static string FormatEuro(long cents) =>
+        (cents / 100m).ToString("#,##0.00", ItalianCulture) + " €";
 }

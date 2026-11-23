@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using PizziniMaker.Core;
 
 namespace PizziniMaker.App;
@@ -10,6 +11,7 @@ public sealed class ActivityEntryViewModel : ObservableObject
     private readonly Action<ActivityEntryViewModel, string?> _changed;
     private readonly Func<WorkCardHistory> _history;
     private readonly List<ActivitySelection> _activityTypes;
+    private readonly int _referenceYear;
     private bool _isLocked;
     private bool _isSuggestionOpen;
     private int _selectedSuggestionIndex = -1;
@@ -18,12 +20,15 @@ public sealed class ActivityEntryViewModel : ObservableObject
         ActivityEntry model,
         IEnumerable<CustomActivityDefinition> customActivities,
         Action<ActivityEntryViewModel, string?> changed,
-        Func<WorkCardHistory>? history = null)
+        Func<WorkCardHistory>? history = null,
+        int? referenceYear = null)
     {
         _model = model;
         _model.WorkCardComment ??= string.Empty;
+        _model.WorkCardNumber ??= string.Empty;
         _changed = changed;
         _history = history ?? (() => new WorkCardHistory());
+        _referenceYear = referenceYear ?? DateTime.Today.Year;
         _activityTypes = ActivityCatalog.GetActivityOptions(customActivities).ToList();
         if (model.Type == ActivityType.Custom && !string.IsNullOrWhiteSpace(model.CustomActivityName) &&
             _activityTypes.All(option => !string.Equals(option.CustomName, model.CustomActivityName, StringComparison.OrdinalIgnoreCase)))
@@ -58,12 +63,24 @@ public sealed class ActivityEntryViewModel : ObservableObject
                 return;
             }
 
+            var previousType = _model.Type;
             _model.Type = selection.Type;
             _model.CustomActivityName = selection.CustomName;
             _model.CustomActivityIcon = selection.Type == ActivityType.Custom ? selection.Icon : string.Empty;
-            if (selection.Type == ActivityType.Scheda)
+            if (selection.Type.HasWorkCard())
             {
-                _model.IsCad = true;
+                if (previousType != selection.Type)
+                {
+                    // I formati dei riferimenti sono diversi: il numero ricomincia, il commento resta.
+                    _model.WorkCardNumber = selection.Type == ActivityType.Preventivo
+                        ? WorkDayValidator.ComposeReference(ActivityType.Preventivo, string.Empty, DefaultYearText)
+                        : string.Empty;
+                }
+                if (!previousType.HasWorkCard())
+                {
+                    _model.IsCad = true;
+                }
+                CloseSuggestions();
             }
             else
             {
@@ -77,8 +94,13 @@ public sealed class ActivityEntryViewModel : ObservableObject
             OnPropertyChanged();
             OnPropertyChanged(nameof(Type));
             OnPropertyChanged(nameof(SelectedActivityDisplayName));
+            OnPropertyChanged(nameof(HasWorkCard));
             OnPropertyChanged(nameof(IsScheda));
-            OnPropertyChanged(nameof(WorkCardNumber));
+            OnPropertyChanged(nameof(IsReference));
+            OnPropertyChanged(nameof(ReferenceSuffixMaxLength));
+            OnPropertyChanged(nameof(ReferenceToolTip));
+            OnPropertyChanged(nameof(ReferenceSuffixToolTip));
+            NotifyNumberChanged();
             OnPropertyChanged(nameof(WorkCardComment));
             OnPropertyChanged(nameof(IsCad));
             OnPropertyChanged(nameof(IsPaperRecorded));
@@ -100,31 +122,38 @@ public sealed class ActivityEntryViewModel : ObservableObject
         }
     }
 
+    /// <summary>Numero completo come salvato: <c>8092</c>, <c>123/X</c>, <c>1234/2026</c>.</summary>
     public string WorkCardNumber
     {
         get => _model.WorkCardNumber;
-        set
-        {
-            value ??= string.Empty;
-            if (_model.WorkCardNumber == value)
-            {
-                return;
-            }
-
-            _model.WorkCardNumber = value;
-            OnPropertyChanged();
-
-            // Numero già noto e commento vuoto: il commento viene proposto dallo storico.
-            if (_model.WorkCardComment.Length == 0 && WorkDayValidator.IsValidWorkCardNumber(value) &&
-                _history().Find(value) is { Comment.Length: > 0 } known)
-            {
-                _model.WorkCardComment = known.Comment;
-                OnPropertyChanged(nameof(WorkCardComment));
-            }
-
-            _changed(this, nameof(WorkCardNumber));
-        }
+        set => SetWorkCardNumber(value);
     }
+
+    /// <summary>Parte numerica di mandato e preventivo.</summary>
+    public string ReferenceNumber
+    {
+        get => WorkDayValidator.SplitReference(_model.WorkCardNumber).Number;
+        set => SetWorkCardNumber(WorkDayValidator.ComposeReference(Type, value, ReferenceSuffix));
+    }
+
+    /// <summary>Lettera del mandato o anno del preventivo.</summary>
+    public string ReferenceSuffix
+    {
+        get => WorkDayValidator.SplitReference(_model.WorkCardNumber).Suffix;
+        set => SetWorkCardNumber(WorkDayValidator.ComposeReference(Type, ReferenceNumber, value));
+    }
+
+    public int ReferenceSuffixMaxLength => Type == ActivityType.Mandato ? 1 : 4;
+
+    public string ReferenceToolTip => Type == ActivityType.Mandato
+        ? "Numero del mandato (es. 123 in 123/X)"
+        : "Numero del preventivo (es. 1234 in 1234/2026)";
+
+    public string ReferenceSuffixToolTip => Type == ActivityType.Mandato
+        ? "Lettera del mandato (es. X in 123/X)"
+        : "Anno del preventivo: proposto l'anno della giornata, modificabile";
+
+    private string DefaultYearText => _referenceYear.ToString(CultureInfo.InvariantCulture);
 
     public string WorkCardComment
     {
@@ -174,7 +203,13 @@ public sealed class ActivityEntryViewModel : ObservableObject
         }
     }
 
+    /// <summary>Scheda, mandato o preventivo: numero, CAD, commento e scheda cartacea.</summary>
+    public bool HasWorkCard => Type.HasWorkCard();
+
     public bool IsScheda => Type == ActivityType.Scheda;
+
+    /// <summary>Mandato o preventivo: numero in due caselle separate da "/".</summary>
+    public bool IsReference => Type is ActivityType.Mandato or ActivityType.Preventivo;
 
     public bool IsEditable => !_isLocked;
 
@@ -219,7 +254,7 @@ public sealed class ActivityEntryViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(suggestion);
         CloseSuggestions();
-        if (!IsEditable)
+        if (!IsEditable || suggestion.Type != Type)
         {
             return;
         }
@@ -227,7 +262,7 @@ public sealed class ActivityEntryViewModel : ObservableObject
         if (_model.WorkCardNumber != suggestion.Number)
         {
             _model.WorkCardNumber = suggestion.Number;
-            OnPropertyChanged(nameof(WorkCardNumber));
+            NotifyNumberChanged();
         }
         SetComment(suggestion.Comment, updateSuggestions: false);
         _changed(this, nameof(WorkCardNumber));
@@ -237,6 +272,35 @@ public sealed class ActivityEntryViewModel : ObservableObject
     {
         IsSuggestionOpen = false;
         SelectedSuggestionIndex = -1;
+    }
+
+    private void SetWorkCardNumber(string? value)
+    {
+        value ??= string.Empty;
+        if (_model.WorkCardNumber == value)
+        {
+            return;
+        }
+
+        _model.WorkCardNumber = value;
+        NotifyNumberChanged();
+
+        // Riferimento già noto e commento vuoto: il commento viene proposto dallo storico.
+        if (_model.WorkCardComment.Length == 0 && WorkDayValidator.IsValidWorkCardNumber(Type, value) &&
+            _history().Find(Type, value) is { Comment.Length: > 0 } known)
+        {
+            _model.WorkCardComment = known.Comment;
+            OnPropertyChanged(nameof(WorkCardComment));
+        }
+
+        _changed(this, nameof(WorkCardNumber));
+    }
+
+    private void NotifyNumberChanged()
+    {
+        OnPropertyChanged(nameof(WorkCardNumber));
+        OnPropertyChanged(nameof(ReferenceNumber));
+        OnPropertyChanged(nameof(ReferenceSuffix));
     }
 
     private void SetComment(string? value, bool updateSuggestions)
@@ -262,7 +326,9 @@ public sealed class ActivityEntryViewModel : ObservableObject
 
     private void RefreshSuggestions()
     {
-        var results = IsEditable ? _history().Search(_model.WorkCardComment, MaximumSuggestions) : [];
+        var results = IsEditable && HasWorkCard
+            ? _history().Search(_model.WorkCardComment, MaximumSuggestions, Type)
+            : [];
         Suggestions.Clear();
         foreach (var result in results)
         {

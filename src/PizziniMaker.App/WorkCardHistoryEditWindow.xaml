@@ -5,9 +5,12 @@
         Title="Scheda" Width="400" MinWidth="320" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" Background="#FFF9EF" FontFamily="Segoe UI" FontSize="13">
     <StackPanel Margin="22">
-        <TextBlock Text="Numero scheda (4 cifre)" FontWeight="SemiBold" TextWrapping="Wrap"/>
-        <TextBox x:Name="NumberTextBox" MaxLength="4" Width="100" HorizontalAlignment="Left" Margin="0,5,0,14" Padding="7,5"
-                 PreviewTextInput="Number_PreviewTextInput"/>
+        <TextBlock Text="Tipo" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        <ComboBox x:Name="TypeComboBox" Width="160" HorizontalAlignment="Left" Margin="0,5,0,14"
+                  DisplayMemberPath="DisplayName" SelectionChanged="Type_SelectionChanged"/>
+        <TextBlock x:Name="NumberLabel" Text="Numero scheda (4 cifre)" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        <TextBox x:Name="NumberTextBox" MaxLength="11" Width="140" HorizontalAlignment="Left" Margin="0,5,0,14" Padding="7,5"
+                 CharacterCasing="Upper" PreviewTextInput="Number_PreviewTextInput"/>
         <TextBlock Text="Commento" FontWeight="SemiBold" TextWrapping="Wrap"/>
         <TextBox x:Name="CommentTextBox" MaxLength="60" Margin="0,5,0,18" Padding="7,5"/>
         <WrapPanel HorizontalAlignment="Right">

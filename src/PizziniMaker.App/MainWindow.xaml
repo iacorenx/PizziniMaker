@@ -58,6 +58,15 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Button Style="{StaticResource LinkButton}" Click="Calendar_Click"
                                 ToolTip="Calendario mensile" Content="📅" FontFamily="Segoe UI Emoji" FontSize="16"/>
+                        <Button Style="{StaticResource LinkButton}" Click="Expenses_Click"
+                                ToolTip="{Binding ExpensesToolTip}" FontFamily="Segoe UI Emoji" FontSize="16">
+                            <TextBlock>
+                                <Run Text="🧾"/><Run Text="{Binding DayExpensesBadge, Mode=OneWay}" FontFamily="Segoe UI"
+                                                    FontSize="10" FontWeight="SemiBold" Foreground="#8D3D12"/>
+                            </TextBlock>
+                        </Button>
+                        <Button Style="{StaticResource LinkButton}" Click="Print_Click"
+                                ToolTip="Stampa o esporta i giorni (PDF, Word)" Content="🖨" FontFamily="Segoe UI Emoji" FontSize="16"/>
                         <Button Style="{StaticResource LinkButton}" Click="Settings_Click"
                                 ToolTip="Impostazioni" Content="⚙" FontSize="17"/>
                     </StackPanel>
@@ -134,9 +143,9 @@
                                                 Click="RemoveEntry_Click" IsEnabled="{Binding IsEditable}" ToolTip="Elimina riga"/>
                                     </Grid>
                                     <Grid Grid.Row="1" Margin="0,5,0,0"
-                                          Visibility="{Binding IsScheda, Converter={StaticResource BoolToVisibility}}">
+                                          Visibility="{Binding HasWorkCard, Converter={StaticResource BoolToVisibility}}">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="95"/>
+                                            <ColumnDefinition Width="118"/>
                                             <ColumnDefinition Width="Auto" MinWidth="62"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
@@ -198,7 +207,7 @@
                                                         <ListBox.ItemTemplate>
                                                             <DataTemplate>
                                                                 <TextBlock TextWrapping="Wrap">
-                                                                    <Run Text="{Binding Number, Mode=OneWay}" FontWeight="SemiBold"/>
+                                                                    <Run Text="{Binding Reference, Mode=OneWay}" FontWeight="SemiBold"/>
                                                                     <Run Text="—" Foreground="#9A917F"/>
                                                                     <Run Text="{Binding Comment, Mode=OneWay}"/>
                                                                 </TextBlock>
@@ -210,7 +219,25 @@
                                         </Grid>
                                         <TextBox Text="{Binding WorkCardNumber, UpdateSourceTrigger=PropertyChanged}"
                                                  MaxLength="4" IsEnabled="{Binding IsEditable}" Margin="0,0,6,0"
-                                                 PreviewTextInput="WorkCard_PreviewTextInput" ToolTip="Numero scheda: 4 cifre"/>
+                                                 PreviewTextInput="WorkCard_PreviewTextInput" DataObject.Pasting="Digits_Pasting"
+                                                 ToolTip="Numero scheda: 4 cifre"
+                                                 Visibility="{Binding IsScheda, Converter={StaticResource BoolToVisibility}}"/>
+                                        <DockPanel Margin="0,0,6,0" LastChildFill="True"
+                                                   Visibility="{Binding IsReference, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBox DockPanel.Dock="Right" MinWidth="22"
+                                                     Text="{Binding ReferenceSuffix, UpdateSourceTrigger=PropertyChanged}"
+                                                     MaxLength="{Binding ReferenceSuffixMaxLength}" IsEnabled="{Binding IsEditable}"
+                                                     CharacterCasing="Upper" HorizontalContentAlignment="Center"
+                                                     PreviewTextInput="ReferenceSuffix_PreviewTextInput"
+                                                     DataObject.Pasting="ReferenceSuffix_Pasting"
+                                                     ToolTip="{Binding ReferenceSuffixToolTip}"/>
+                                            <TextBlock DockPanel.Dock="Right" Text="/" Margin="2,0" VerticalAlignment="Center"
+                                                       FontWeight="SemiBold"/>
+                                            <TextBox Text="{Binding ReferenceNumber, UpdateSourceTrigger=PropertyChanged}"
+                                                     MaxLength="6" IsEnabled="{Binding IsEditable}"
+                                                     PreviewTextInput="WorkCard_PreviewTextInput" DataObject.Pasting="Digits_Pasting"
+                                                     ToolTip="{Binding ReferenceToolTip}"/>
+                                        </DockPanel>
                                         <CheckBox Grid.Column="1" Content="CAD" IsChecked="{Binding IsCad}"
                                                   IsEnabled="{Binding IsEditable}" VerticalAlignment="Center"/>
                                         <CheckBox Grid.Column="2" Content="Su carta" IsChecked="{Binding IsPaperRecorded}"

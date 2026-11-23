@@ -140,6 +140,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void Expenses_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.SaveCurrentDay();
+        new ExpensesWindow(new ExpenseStore(_viewModel.Store), _viewModel.CurrentDate, () => _viewModel.Settings.KmRateCents)
+        {
+            Owner = this
+        }.ShowDialog();
+        _viewModel.RefreshExpenses();
+    }
+
+    private void Print_Click(object sender, RoutedEventArgs e) =>
+        ((App)Application.Current).ShowPrintWindow(this);
+
     private void Settings_Click(object sender, RoutedEventArgs e) =>
         ((App)Application.Current).ShowSettings(this);
 
@@ -164,6 +177,30 @@ public partial class MainWindow : Window
 
     private void WorkCard_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
         e.Handled = !e.Text.All(char.IsAsciiDigit);
+
+    private static bool IsAllowedSuffix(object sender, string text) =>
+        sender is FrameworkElement { DataContext: ActivityEntryViewModel { Type: ActivityType.Mandato } }
+            ? text.All(char.IsAsciiLetter)
+            : text.All(char.IsAsciiDigit);
+
+    private void ReferenceSuffix_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
+        e.Handled = !IsAllowedSuffix(sender, e.Text);
+
+    private void Digits_Pasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (e.DataObject.GetData(typeof(string)) is not string text || !text.Trim().All(char.IsAsciiDigit))
+        {
+            e.CancelCommand();
+        }
+    }
+
+    private void ReferenceSuffix_Pasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (e.DataObject.GetData(typeof(string)) is not string text || !IsAllowedSuffix(sender, text.Trim()))
+        {
+            e.CancelCommand();
+        }
+    }
 
     private void Comment_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {

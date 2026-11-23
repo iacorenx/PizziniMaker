@@ -32,7 +32,9 @@ public sealed record MonthlyReport(
     int MissingMinutes,
     int TravelDays = 0,
     int TravelMinutes = 0,
-    int TrasfertaDays = 0);
+    int TrasfertaDays = 0,
+    int InjuryDays = 0,
+    int InjuryMinutes = 0);
 
 public static class MonthlySummaryService
 {
@@ -57,6 +59,8 @@ public static class MonthlySummaryService
         var travelDays = 0;
         var travelMinutes = 0;
         var trasfertaDays = 0;
+        var injuryDays = 0;
+        var injuryMinutes = 0;
 
         for (var date = firstDay; date.Month == month; date = date.AddDays(1))
         {
@@ -110,6 +114,12 @@ public static class MonthlySummaryService
                 sickDays++;
                 sickMinutes += daySickMinutes;
             }
+            var dayInjuryMinutes = GetMinutes(day, ActivityType.Infortunio);
+            if (dayInjuryMinutes > 0)
+            {
+                injuryDays++;
+                injuryMinutes += dayInjuryMinutes;
+            }
             if (overtime > 0)
             {
                 overtimeDays++;
@@ -128,7 +138,7 @@ public static class MonthlySummaryService
 
         return new MonthlyReport(year, month, days, leaveDays, leaveMinutes, sickDays,
             sickMinutes, overtimeDays, overtimeMinutes, missingDays, missingMinutes,
-            travelDays, travelMinutes, trasfertaDays);
+            travelDays, travelMinutes, trasfertaDays, injuryDays, injuryMinutes);
     }
 
     private static int GetMinutes(WorkDay day, ActivityType type) =>
@@ -142,17 +152,16 @@ public static class MonthlySummaryService
         }
 
         var icons = new List<string>();
-        if (day.Entries.Any(entry => entry.Type == ActivityType.FeriePermesso))
+        foreach (var type in new[] { ActivityType.FeriePermesso, ActivityType.Malattia, ActivityType.Infortunio })
         {
-            icons.Add("🏝️");
-        }
-        if (day.Entries.Any(entry => entry.Type == ActivityType.Malattia))
-        {
-            icons.Add("✚");
+            if (day.Entries.Any(entry => entry.Type == type))
+            {
+                icons.Add(type.GetIcon());
+            }
         }
         if (overtime > 0)
         {
-            icons.Add("€€");
+            icons.Add(ActivityCatalog.OvertimeIcon);
         }
         if (day.Entries.Any(entry => entry.Type == ActivityType.Viaggio))
         {

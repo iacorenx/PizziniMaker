@@ -15,7 +15,7 @@
         </Grid.RowDefinitions>
         <TextBlock Text="Storico schede" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap"/>
         <TextBlock Grid.Row="1" Margin="0,7,0,10" TextWrapping="Wrap" Foreground="#6C665B"
-                   Text="Le schede delle giornate confermate vengono aggiunte automaticamente. Ogni numero ha un solo commento, proposto mentre scrivi nella riga Scheda."/>
+                   Text="Le schede delle giornate confermate vengono aggiunte automaticamente. Schede, mandati e preventivi: ogni numero ha un solo commento, proposto mentre scrivi nella riga."/>
         <Grid Grid.Row="2" Margin="0,0,0,8">
             <TextBox x:Name="SearchTextBox" Padding="7,5" TextChanged="Search_TextChanged"
                      ToolTip="Cerca per numero o commento"/>
@@ -39,10 +39,10 @@
                 <DataTemplate>
                     <Grid Margin="4,4">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="56"/>
+                            <ColumnDefinition Width="Auto" MinWidth="56"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding Number}" FontWeight="SemiBold" FontSize="14"/>
+                        <TextBlock Text="{Binding Number}" FontWeight="SemiBold" FontSize="14" Margin="0,0,10,0"/>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="{Binding CommentText}" TextWrapping="Wrap"/>
                             <TextBlock Text="{Binding UsageText}" FontSize="11" Foreground="#7B7468" TextWrapping="Wrap"/>

@@ -8,7 +8,9 @@ public enum ActivityType
     Malattia,
     Infortunio,
     Custom,
-    Viaggio
+    Viaggio,
+    Mandato,
+    Preventivo
 }
 
 public sealed class CustomActivityDefinition
@@ -57,6 +59,9 @@ public sealed class WorkDay
 
     public DateTimeOffset? ConfirmedAt { get; set; }
 
+    /// <summary>Contatore delle modifiche salvate, base per la futura sincronizzazione con la segreteria.</summary>
+    public int Revision { get; set; }
+
     public int TotalMinutes => Entries.Sum(entry => entry.Minutes);
 
     public static WorkDay CreateNew(DateOnly date) => new()
@@ -68,13 +73,23 @@ public sealed class WorkDay
 
 public sealed class AppSettings
 {
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
 
     public const string LegacyTrasfertaActivityName = "TRASFERTA";
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
+    /// <summary>Identificativo stabile del dipendente (schema 4), per la futura sincronizzazione.</summary>
+    public Guid EmployeeId { get; set; } = Guid.NewGuid();
+
     public string EmployeeName { get; set; } = string.Empty;
+
+    /// <summary>Tariffa di rimborso chilometrico in centesimi di euro per km (0 = non impostata).</summary>
+    public int KmRateCents { get; set; }
+
+    public bool CheckUpdatesAtStartup { get; set; } = true;
+
+    public DateOnly? LastUpdateCheck { get; set; }
 
     public DateOnly TrackingStartDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 

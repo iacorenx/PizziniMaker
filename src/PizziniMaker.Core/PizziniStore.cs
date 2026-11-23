@@ -27,6 +27,7 @@ public sealed class PizziniStore
         SettingsFilePath = Path.Combine(RootDirectory, "Impostazioni.json");
         HistoryFilePath = Path.Combine(RootDirectory, "StoricoSchede.json");
         BackupDirectory = Path.Combine(RootDirectory, "Backup");
+        ExpenseDirectory = Path.Combine(RootDirectory, "NoteSpese");
         if (createDirectories)
         {
             Directory.CreateDirectory(DataDirectory);
@@ -46,18 +47,50 @@ public sealed class PizziniStore
 
     public string BackupDirectory { get; }
 
-    public AppSettings LoadSettings()
+    public string ExpenseDirectory { get; }
+
+    internal T? LoadJsonFile<T>(string path) where T : class => LoadJson<T>(path);
+
+    internal void WriteJsonFile<T>(string path, T value) => WriteJsonAtomic(path, value);
+
+    public AppSettings LoadSettings(bool saveMigration = true)
     {
-        var settings = LoadJson<AppSettings>(SettingsFilePath) ?? new AppSettings();
+        var stored = LoadJson<AppSettings>(SettingsFilePath);
+        var settings = stored ?? new AppSettings();
         settings.CustomActivities ??= AppSettings.CreateDefaultCustomActivities();
-        if (settings.SchemaVersion < 3)
+        var migrated = MigrateSettings(settings);
+        if (saveMigration && stored is not null && migrated)
+        {
+            // La migrazione viene salvata subito, così l'identificativo del dipendente resta stabile.
+            SaveSettings(settings);
+        }
+        return settings;
+    }
+
+    /// <summary>Porta le impostazioni allo schema corrente. Restituisce true se è cambiato qualcosa.</summary>
+    public static bool MigrateSettings(AppSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var original = settings.SchemaVersion;
+        if (original < 3)
         {
             // Dalla 1.2.0 la trasferta è una qualifica della giornata e non più un'attività con ore.
             settings.CustomActivities.RemoveAll(activity => string.Equals(activity.Name?.Trim(),
                 AppSettings.LegacyTrasfertaActivityName, StringComparison.OrdinalIgnoreCase));
         }
+        if (original < 4)
+        {
+            // Dalla 1.3.0 MANDATO e PREVENTIVO sono attività predefinite con numero di riferimento.
+            settings.CustomActivities.RemoveAll(activity =>
+                string.Equals(activity.Name?.Trim(), "MANDATO", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(activity.Name?.Trim(), "PREVENTIVO", StringComparison.OrdinalIgnoreCase));
+        }
+        if (settings.EmployeeId == Guid.Empty)
+        {
+            settings.EmployeeId = Guid.NewGuid();
+        }
         settings.SchemaVersion = AppSettings.CurrentSchemaVersion;
-        return settings;
+        return original != settings.SchemaVersion;
     }
 
     public WorkCardHistory? LoadHistory() => LoadJson<WorkCardHistory>(HistoryFilePath) is { } history
@@ -95,7 +128,7 @@ public sealed class PizziniStore
     private static WorkCardHistory Normalize(WorkCardHistory history)
     {
         history.Entries ??= [];
-        history.Entries.RemoveAll(entry => entry is null || !WorkDayValidator.IsValidWorkCardNumber(entry.Number));
+        history.Entries.RemoveAll(entry => !WorkCardHistory.IsValidEntry(entry));
         foreach (var entry in history.Entries)
         {
             entry.Comment = WorkCardHistory.NormalizeComment(entry.Comment);
@@ -206,6 +239,7 @@ public sealed class PizziniStore
     {
         ArgumentNullException.ThrowIfNull(day);
         day.LastModifiedAt = DateTimeOffset.Now;
+        day.Revision++;
         WriteJsonAtomic(GetDayFilePath(day.Date), day);
     }
 
