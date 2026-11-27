@@ -88,6 +88,52 @@ public static class PrintSlipBuilder
 
     public static int CountPages(int slipCount, int slipsPerPage = DefaultSlipsPerPage) =>
         slipCount <= 0 ? 0 : (slipCount + slipsPerPage - 1) / slipsPerPage;
+
+    /// <summary>
+    /// Impronta del contenuto del foglietto. Esclusi il nome del dipendente e la spunta della scheda cartacea:
+    /// cambiarli dopo la consegna non rende necessaria una ristampa.
+    /// </summary>
+    public static string GetFingerprint(WorkDay day)
+    {
+        ArgumentNullException.ThrowIfNull(day);
+        var slip = Build(day, string.Empty);
+        var text = new StringBuilder();
+        text.Append(day.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).Append('\n');
+        foreach (var line in slip.Lines)
+        {
+            text.Append(line.ShowPaperBox ? "[ ] " : "    ").Append(line.Text).Append('\n');
+        }
+        text.Append(slip.FooterText);
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
+    }
+}
+
+/// <summary>Stato di consegna del foglietto stampato di una giornata.</summary>
+public enum DeliveryStatus
+{
+    NotDelivered,
+    Delivered,
+    ChangedAfterDelivery
+}
+
+public static class PrintDelivery
+{
+    public static DeliveryStatus GetStatus(WorkDay? day)
+    {
+        if (day?.DeliveredAt is null)
+        {
+            return DeliveryStatus.NotDelivered;
+        }
+        return string.Equals(day.DeliveredFingerprint, PrintSlipBuilder.GetFingerprint(day), StringComparison.Ordinal)
+            ? DeliveryStatus.Delivered
+            : DeliveryStatus.ChangedAfterDelivery;
+    }
+
+    /// <summary>Giorno con attività da stampare: ha ore, non è una bozza e non è già consegnato così com'è.</summary>
+    public static bool HasPrintableContent(WorkDay? day) => day is { Entries.Count: > 0 } && day.TotalMinutes > 0;
+
+    public static bool NeedsPrinting(WorkDay? day) =>
+        HasPrintableContent(day) && day!.IsConfirmed && GetStatus(day) != DeliveryStatus.Delivered;
 }
 
 /// <summary>Disposizione comune (in millimetri) di stampa, PDF e Word: A4 verticale, griglia 2 × 2 di A6.</summary>

@@ -80,6 +80,7 @@ public sealed class MainViewModel : ObservableObject
 
             _currentDay.IsTrasferta = value;
             OnPropertyChanged();
+            NotifyDelivery();
             SaveCurrentDay();
         }
     }
@@ -114,6 +115,64 @@ public sealed class MainViewModel : ObservableObject
     public string ConfirmationStatusText => IsConfirmed
         ? $"✓ Giorno confermato il {_currentDay.ConfirmedAt?.ToLocalTime():dd/MM/yyyy HH:mm}"
         : "Bozza non confermata";
+
+    public DeliveryStatus Delivery => PrintDelivery.GetStatus(_currentDay);
+
+    /// <summary>Lo stato di consegna si mostra per i giorni confermati con ore e per quelli già consegnati.</summary>
+    public bool ShowDeliveryStatus => _currentDay.DeliveredAt is not null ||
+        (IsConfirmed && PrintDelivery.HasPrintableContent(_currentDay));
+
+    public string DeliveryStatusText => Delivery switch
+    {
+        DeliveryStatus.Delivered => $"✓ Consegnato il {_currentDay.DeliveredAt?.ToLocalTime():dd/MM/yyyy HH:mm}",
+        DeliveryStatus.ChangedAfterDelivery => $"! Consegnato il {_currentDay.DeliveredAt?.ToLocalTime():dd/MM/yyyy}, poi modificato: da ristampare",
+        _ => "Non ancora stampato e consegnato"
+    };
+
+    public string DeliveryStatusBrush => Delivery switch
+    {
+        DeliveryStatus.Delivered => "#52685B",
+        DeliveryStatus.ChangedAfterDelivery => "#A74716",
+        _ => "#7B7468"
+    };
+
+    public string DeliveryActionText => _currentDay.DeliveredAt is null ? "Segna consegnato" : "Togli consegnato";
+
+    /// <summary>Segna o toglie a mano il contrassegno di consegnato del giorno mostrato.</summary>
+    public bool ToggleDelivered()
+    {
+        if (!SaveCurrentDay())
+        {
+            return false;
+        }
+
+        try
+        {
+            if (_currentDay.DeliveredAt is null)
+            {
+                if (_store.MarkDelivered([CurrentDate]).Count == 0)
+                {
+                    LastError = "Solo un giorno confermato con ore può essere segnato come consegnato.";
+                    return false;
+                }
+                SetDay(_store.LoadDay(CurrentDate));
+                PersistenceStatus = "Giorno segnato come consegnato.";
+            }
+            else
+            {
+                _store.ClearDelivered([CurrentDate]);
+                SetDay(_store.LoadDay(CurrentDate));
+                PersistenceStatus = "Contrassegno di consegnato tolto.";
+            }
+            LastError = string.Empty;
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            LastError = $"Aggiornamento della consegna non riuscito: {exception.Message}";
+            return false;
+        }
+    }
 
     public string TotalText => $"Totale: {ActivityCatalog.FormatDuration(_currentDay.TotalMinutes)}";
 
@@ -415,6 +474,16 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(TotalText));
         OnPropertyChanged(nameof(HoursDetailText));
         OnPropertyChanged(nameof(HasHoursDetail));
+        NotifyDelivery();
+    }
+
+    private void NotifyDelivery()
+    {
+        OnPropertyChanged(nameof(Delivery));
+        OnPropertyChanged(nameof(ShowDeliveryStatus));
+        OnPropertyChanged(nameof(DeliveryStatusText));
+        OnPropertyChanged(nameof(DeliveryStatusBrush));
+        OnPropertyChanged(nameof(DeliveryActionText));
     }
 
     private void NotifyDayProperties()

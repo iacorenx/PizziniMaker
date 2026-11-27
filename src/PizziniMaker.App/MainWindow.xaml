@@ -264,7 +264,17 @@
                     <Button Grid.Column="1" Content="+ Riga" Click="AddEntry_Click" Padding="10,3"
                             Visibility="{Binding CanEditDay, Converter={StaticResource BoolToVisibility}}"/>
                 </Grid>
-                <TextBlock Text="{Binding ConfirmationStatusText}" Margin="0,5,0,5" Foreground="#52685B" FontSize="11"/>
+                <TextBlock Text="{Binding ConfirmationStatusText}" Margin="0,5,0,0" Foreground="#52685B" FontSize="11"/>
+                <Grid Margin="0,2,0,5" Visibility="{Binding ShowDeliveryStatus, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding DeliveryStatusText}" Foreground="{Binding DeliveryStatusBrush}" FontSize="11"
+                               TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Style="{StaticResource LinkButton}" Content="{Binding DeliveryActionText}"
+                            Click="ToggleDelivered_Click" FontSize="10" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </Grid>
                 <Button Content="Conferma giorno" Click="ConfirmDay_Click" Padding="10,6"
                         Background="#2F6F4E" Foreground="White" BorderBrush="#2F6F4E" FontWeight="SemiBold"
                         Visibility="{Binding CanEditDay, Converter={StaticResource BoolToVisibility}}"/>

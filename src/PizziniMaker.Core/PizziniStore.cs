@@ -281,6 +281,53 @@ public sealed class PizziniStore
         WriteJsonAtomic(GetDayFilePath(day.Date), day);
     }
 
+    /// <summary>
+    /// Segna come consegnati (stampati e dati all'addetta) i giorni confermati con attività; le bozze sono ignorate.
+    /// Non è una modifica del contenuto: data di ultima modifica e revisione restano invariate.
+    /// Restituisce le date effettivamente segnate.
+    /// </summary>
+    public IReadOnlyList<DateOnly> MarkDelivered(IEnumerable<DateOnly> dates)
+    {
+        ArgumentNullException.ThrowIfNull(dates);
+        var marked = new List<DateOnly>();
+        var now = DateTimeOffset.Now;
+        foreach (var date in dates.Distinct().Order())
+        {
+            if (LoadExistingDay(date) is not { IsConfirmed: true } day || !PrintDelivery.HasPrintableContent(day))
+            {
+                continue;
+            }
+            day.DeliveredAt = now;
+            day.DeliveredFingerprint = PrintSlipBuilder.GetFingerprint(day);
+            WriteJsonAtomic(GetDayFilePath(date), day);
+            marked.Add(date);
+        }
+        return marked;
+    }
+
+    /// <summary>Toglie il contrassegno di consegna; restituisce le date che lo avevano.</summary>
+    public IReadOnlyList<DateOnly> ClearDelivered(IEnumerable<DateOnly> dates)
+    {
+        ArgumentNullException.ThrowIfNull(dates);
+        var cleared = new List<DateOnly>();
+        foreach (var date in dates.Distinct().Order())
+        {
+            if (LoadExistingDay(date) is not { } day || (day.DeliveredAt is null && day.DeliveredFingerprint is null))
+            {
+                continue;
+            }
+            day.DeliveredAt = null;
+            day.DeliveredFingerprint = null;
+            WriteJsonAtomic(GetDayFilePath(date), day);
+            cleared.Add(date);
+        }
+        return cleared;
+    }
+
+    /// <summary>Giorni confermati ancora da stampare (mai consegnati o modificati dopo la consegna).</summary>
+    public IReadOnlyList<DateOnly> GetDaysToPrint() =>
+        LoadAllDays(out _).Where(PrintDelivery.NeedsPrinting).Select(day => day.Date).ToArray();
+
     public WorkDay ReopenDay(DateOnly date)
     {
         var day = LoadDay(date);

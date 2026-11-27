@@ -16,7 +16,8 @@ public sealed record MonthlyDayInfo(
     int OvertimeMinutes,
     IReadOnlyList<string> Icons,
     int TravelMinutes = 0,
-    bool IsTrasferta = false);
+    bool IsTrasferta = false,
+    DeliveryStatus Delivery = DeliveryStatus.NotDelivered);
 
 public sealed record MonthlyReport(
     int Year,
@@ -89,7 +90,8 @@ public static class MonthlySummaryService
                 overtime,
                 icons,
                 dayTravelMinutes,
-                day?.IsTrasferta == true));
+                day?.IsTrasferta == true,
+                PrintDelivery.GetStatus(day)));
 
             if (isIncomplete)
             {

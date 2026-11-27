@@ -62,6 +62,12 @@ public sealed class WorkDay
     /// <summary>Contatore delle modifiche salvate, base per la futura sincronizzazione con la segreteria.</summary>
     public int Revision { get; set; }
 
+    /// <summary>Quando il foglietto del giorno è stato stampato e consegnato (null = non consegnato).</summary>
+    public DateTimeOffset? DeliveredAt { get; set; }
+
+    /// <summary>Impronta del foglietto consegnato: se il contenuto cambia, il giorno va ristampato.</summary>
+    public string? DeliveredFingerprint { get; set; }
+
     public int TotalMinutes => Entries.Sum(entry => entry.Minutes);
 
     public static WorkDay CreateNew(DateOnly date) => new()

@@ -131,6 +131,12 @@ public sealed class MonthlyCalendarViewModel : ObservableObject
         {
             tooltip += "\nGiorno obbligatorio incompleto";
         }
+        tooltip += day.Delivery switch
+        {
+            DeliveryStatus.Delivered => "\nStampato e consegnato",
+            DeliveryStatus.ChangedAfterDelivery => "\nModificato dopo la consegna: da ristampare",
+            _ => day.IsConfirmed && day.TotalMinutes > 0 ? "\nNon ancora consegnato" : string.Empty
+        };
 
         return new CalendarCellViewModel
         {

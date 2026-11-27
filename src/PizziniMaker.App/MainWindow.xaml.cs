@@ -120,6 +120,21 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ToggleDelivered_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.DeliveryActionText == "Togli consegnato" &&
+            MessageBox.Show(this,
+                "Togliere il contrassegno di consegnato? Il giorno tornerà fra quelli da stampare.",
+                "Consegna", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+        if (!_viewModel.ToggleDelivered())
+        {
+            ShowError(_viewModel.LastError);
+        }
+    }
+
     private void ForceNonWorkingDay_Click(object sender, RoutedEventArgs e)
     {
         var answer = MessageBox.Show(this,

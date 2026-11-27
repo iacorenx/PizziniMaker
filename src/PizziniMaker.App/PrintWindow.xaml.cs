@@ -22,16 +22,51 @@ public sealed class PrintDayCell : ObservableObject
         _selection = selection;
         _selectionChanged = selectionChanged;
         IsVisible = date is not null;
-        IsEnabled = day is { Entries.Count: > 0 } && day.TotalMinutes > 0;
+        IsEnabled = PrintDelivery.HasPrintableContent(day);
         IsConfirmed = day?.IsConfirmed == true;
+        Delivery = PrintDelivery.GetStatus(day);
+        NeedsPrinting = PrintDelivery.NeedsPrinting(day);
         DayNumber = date?.Day.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         Detail = !IsEnabled ? string.Empty : $"{ActivityCatalog.FormatHours(day!.TotalMinutes)} h";
-        Background = !IsEnabled ? "#F4F2EE" : IsConfirmed ? "#DDF3DF" : "#FFF8E7";
-        ToolTip = date is { } value
-            ? ActivityCatalog.FormatDate(value) + (!IsEnabled ? "\nNessuna attività da stampare"
-                : IsConfirmed ? "\nGiorno confermato" : "\nBozza non confermata (stampata con la scritta BOZZA)")
-            : null;
+        Status = !IsEnabled ? string.Empty
+            : Delivery == DeliveryStatus.Delivered ? "✓ dato"
+            : Delivery == DeliveryStatus.ChangedAfterDelivery ? "ristampa"
+            : IsConfirmed ? "stampare" : "bozza";
+        StatusBrush = Delivery == DeliveryStatus.ChangedAfterDelivery ? "#A74716"
+            : Delivery == DeliveryStatus.Delivered ? "#5E6B60" : "#256B3A";
+        Background = !IsEnabled ? "#F4F2EE"
+            : Delivery == DeliveryStatus.Delivered ? "#E4E8E3"
+            : Delivery == DeliveryStatus.ChangedAfterDelivery ? "#FCE4D6"
+            : IsConfirmed ? "#DDF3DF" : "#FFF8E7";
+        if (date is { } value)
+        {
+            var tip = ActivityCatalog.FormatDate(value);
+            if (!IsEnabled)
+            {
+                tip += "\nNessuna attività da stampare";
+            }
+            else
+            {
+                tip += IsConfirmed ? "\nGiorno confermato" : "\nBozza non confermata (stampata con la scritta BOZZA)";
+                tip += Delivery switch
+                {
+                    DeliveryStatus.Delivered => $"\nConsegnato il {day!.DeliveredAt!.Value.ToLocalTime():dd/MM/yyyy HH:mm}",
+                    DeliveryStatus.ChangedAfterDelivery =>
+                        $"\nConsegnato il {day!.DeliveredAt!.Value.ToLocalTime():dd/MM/yyyy HH:mm}, poi modificato: da ristampare",
+                    _ => IsConfirmed ? "\nNon ancora consegnato" : string.Empty
+                };
+            }
+            ToolTip = tip;
+        }
     }
+
+    public DeliveryStatus Delivery { get; }
+
+    public bool NeedsPrinting { get; }
+
+    public string Status { get; } = string.Empty;
+
+    public string StatusBrush { get; }
 
     public DateOnly? Date { get; }
 
@@ -119,20 +154,55 @@ public partial class PrintWindow : Window
             _cells.Add(new PrintDayCell(date, day, _selection, UpdateSummary));
         }
         DaysGrid.ItemsSource = _cells;
+        UpdateOtherMonthsNotice();
         UpdateSummary();
     }
+
+    private void UpdateOtherMonthsNotice()
+    {
+        IReadOnlyList<DateOnly> toPrint;
+        try
+        {
+            toPrint = _store.GetDaysToPrint();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            toPrint = [];
+        }
+        var others = toPrint.Where(date => date.Year != _month.Year || date.Month != _month.Month).ToArray();
+        if (others.Length == 0)
+        {
+            OtherMonthsNotice.Visibility = Visibility.Collapsed;
+            return;
+        }
+        var culture = CultureInfo.GetCultureInfo("it-IT");
+        var months = others
+            .Select(date => new DateOnly(date.Year, date.Month, 1))
+            .Distinct()
+            .Select(month => $"{month.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy", culture)} ({others.Count(date => date.Year == month.Year && date.Month == month.Month)})");
+        OtherMonthsText.Text = (others.Length == 1 ? "1 giorno confermato da stampare" : $"{others.Length} giorni confermati da stampare") +
+            " in altri mesi: " + string.Join(", ", months);
+        OtherMonthsNotice.Visibility = Visibility.Visible;
+    }
+
+    private string _lastAction = string.Empty;
 
     private void UpdateSummary()
     {
         var pages = PrintSlipBuilder.CountPages(_selection.Count);
         SelectionText.Text = _selection.Count == 0
-            ? "Nessun giorno selezionato."
+            ? (_lastAction.Length > 0 ? _lastAction + "\n" : string.Empty) + "Nessun giorno selezionato."
             : $"{(_selection.Count == 1 ? "1 giorno selezionato" : $"{_selection.Count} giorni selezionati")} · " +
               $"{(pages == 1 ? "1 foglio A4" : $"{pages} fogli A4")}\n" +
               string.Join(", ", _selection.Take(20).Select(date => date.ToString("dd/MM", CultureInfo.InvariantCulture))) +
               (_selection.Count > 20 ? " …" : string.Empty);
         var hasSelection = _selection.Count > 0;
         PreviewButton.IsEnabled = PdfButton.IsEnabled = WordButton.IsEnabled = PrintButton.IsEnabled = hasSelection;
+        MarkDeliveredButton.IsEnabled = ClearDeliveredButton.IsEnabled = hasSelection;
+        if (hasSelection)
+        {
+            _lastAction = string.Empty;
+        }
     }
 
     private IReadOnlyList<IReadOnlyList<PrintSlip>>? BuildPages()
@@ -169,7 +239,68 @@ public partial class PrintWindow : Window
         LoadMonth();
     }
 
-    private void SelectConfirmed_Click(object sender, RoutedEventArgs e) => SetMonthSelection(cell => cell.IsConfirmed);
+    private void SelectToPrint_Click(object sender, RoutedEventArgs e)
+    {
+        SetMonthSelection(cell => cell.NeedsPrinting);
+        if (_selection.Count == 0)
+        {
+            _lastAction = "Nel mese non ci sono giorni confermati da stampare.";
+            UpdateSummary();
+        }
+    }
+
+    private void MarkDelivered_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var marked = _store.MarkDelivered(_selection);
+            var skipped = _selection.Count - marked.Count;
+            FinishDeliveryChange(DescribeMarked(marked.Count, skipped));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            ShowDeliveryError(exception);
+        }
+    }
+
+    private void ClearDelivered_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show(this,
+                $"Togliere il contrassegno di consegnato a {FormatDays(_selection.Count)} selezionat{(_selection.Count == 1 ? "o" : "i")}?\n" +
+                "Torneranno fra i giorni da stampare.",
+                "Consegna", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+        try
+        {
+            var cleared = _store.ClearDelivered(_selection);
+            FinishDeliveryChange(cleared.Count == 0
+                ? "Nessuno dei giorni selezionati era segnato come consegnato."
+                : $"Contrassegno di consegnato tolto da {FormatDays(cleared.Count)}.");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            ShowDeliveryError(exception);
+        }
+    }
+
+    private void FinishDeliveryChange(string message)
+    {
+        _selection.Clear();
+        _lastAction = message;
+        LoadMonth();
+    }
+
+    private void ShowDeliveryError(Exception exception) =>
+        MessageBox.Show(this, $"Aggiornamento del contrassegno non riuscito: {exception.Message}", "Consegna",
+            MessageBoxButton.OK, MessageBoxImage.Warning);
+
+    private static string FormatDays(int count) => count == 1 ? "1 giorno" : $"{count} giorni";
+
+    private static string DescribeMarked(int marked, int skippedDrafts) =>
+        $"Segnati come consegnati: {FormatDays(marked)}." +
+        (skippedDrafts > 0 ? $" Bozze non segnate (vanno prima confermate): {FormatDays(skippedDrafts)}." : string.Empty);
 
     private void ClearMonth_Click(object sender, RoutedEventArgs e) => SetMonthSelection(_ => false);
 
@@ -246,6 +377,18 @@ public partial class PrintWindow : Window
         catch (Exception exception) when (exception is PrintQueueException or InvalidOperationException)
         {
             MessageBox.Show(this, $"Stampa non riuscita: {exception.Message}", "Stampa", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Stampa inviata: i giorni confermati stampati risultano consegnati.
+        try
+        {
+            var marked = _store.MarkDelivered(_selection);
+            FinishDeliveryChange("Stampa inviata. " + DescribeMarked(marked.Count, _selection.Count - marked.Count));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            ShowDeliveryError(exception);
         }
     }
 

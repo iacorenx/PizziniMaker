@@ -306,6 +306,9 @@ public partial class App : WpfApplication, ISettingsActions
             window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
         }
         window.ShowDialog();
+        // La stampa può aver segnato giorni come consegnati: il giorno aperto va riletto,
+        // altrimenti il prossimo salvataggio automatico riscriverebbe la copia vecchia.
+        _viewModel.ReloadFromStore();
     }
 
     private UpdateWindow? _updateWindow;

@@ -2,9 +2,9 @@
 
 ## Installazione e trasferimento
 
-PizziniMaker (versione 1.3.0) non richiede installazione né runtime aggiuntivi.
+PizziniMaker (versione 1.4.0) non richiede installazione né runtime aggiuntivi.
 
-1. Estrarre `PizziniMaker-1.3.0-win-x64.zip` in una cartella scrivibile, ad esempio `Documenti\PizziniMaker`.
+1. Estrarre `PizziniMaker-1.4.0-win-x64.zip` in una cartella scrivibile, ad esempio `Documenti\PizziniMaker`.
 2. Avviare `PizziniMaker.exe` con l'icona delle due pizze.
 3. Al primo avvio il programma cerca una versione precedente (cartelle vicine, Desktop, Documenti, Download) e propone di importarne **giornate, log, note spese, storico, nome del dipendente e preferenze**. In alternativa si può scegliere la cartella a mano o partire da zero.
 4. Se non si importa nulla, inserire il nome del dipendente e la data dalla quale controllare i giorni mancanti.
@@ -82,11 +82,20 @@ Il pulsante **🧾** in alto (con il numero di spese del giorno, se presenti) ap
 
 Il pulsante **🖨** in alto (o **Stampa giorni…** nel menu dell'icona) apre la finestra di stampa.
 
-1. Nel calendario spuntare i giorni da stampare; si può cambiare mese mantenendo la selezione. Sono selezionabili i giorni con attività (verde = confermato, giallo = bozza). **Seleziona confermati del mese** li spunta tutti insieme.
+1. Nel calendario spuntare i giorni da stampare; si può cambiare mese mantenendo la selezione. Sono selezionabili i giorni con attività: verde = confermato da stampare, grigio = già consegnato, arancio = modificato dopo la consegna (da ristampare), giallo = bozza. **Seleziona da stampare** spunta i giorni confermati del mese non ancora consegnati o da ristampare; se ce ne sono in altri mesi, un avviso arancio in alto li elenca.
 2. Il riepilogo indica giorni selezionati e fogli A4 necessari.
 3. **Anteprima**, **Stampa…**, **Salva PDF…** o **Salva Word…**.
 
 Ogni giorno è un foglietto **A6** con bordo tratteggiato, **quattro per foglio A4 verticale**: in alto a sinistra il nome del dipendente, in alto a destra la data `GG/MM/AAAA`, sotto l'elenco delle attività in caratteri grandi e in fondo il totale (con viaggio, straordinario, trasferta e la scritta BOZZA se il giorno non è confermato). Accanto a schede, mandati e preventivi c'è un quadratino: con la **V** se l'attività è registrata su carta, vuoto altrimenti. Il bordo tratteggiato è rientrato di 3 mm per restare nell'area stampabile delle stampanti.
+
+### Giorni consegnati
+
+Dopo **Stampa…** i giorni confermati stampati vengono segnati come **consegnati** (i foglietti si danno all'addetta che raccoglie gli orari). **Salva PDF…** e **Salva Word…** non li segnano, e le bozze non vengono mai segnate.
+
+- Se la stampa è andata persa o va rifatta, selezionare i giorni e premere **Togli consegnato**: torneranno fra quelli da stampare.
+- **Segna come consegnati** mette il contrassegno senza stampare (ad esempio per i giorni consegnati prima della versione 1.4.0).
+- Anche nella finestra principale, sotto lo stato di conferma, compare lo stato di consegna del giorno con il comando **Segna consegnato** / **Togli consegnato**.
+- Se un giorno consegnato viene riaperto e modificato, diventa **da ristampare** e torna fra quelli selezionati da **Seleziona da stampare**. Cambiare solo la spunta della scheda cartacea non richiede una ristampa.
 
 ## Domeniche e festività nazionali
 
@@ -105,7 +114,7 @@ Sabati, domeniche, festività nazionali, giorni futuri e date precedenti all'ini
 
 ## Area di notifica e avvio automatico
 
-La chiusura della finestra con **X** la nasconde ma lascia PizziniMaker disponibile accanto all'orologio. Fare doppio clic sull'icona delle pizze per riaprirlo. Per chiudere completamente usare **Esci** nel menu dell'icona (tasto destro), che riporta anche **la versione installata** e i crediti (`PizziniMaker 1.3.0 · Energy Srl · Iacopo Preci · 2026`).
+La chiusura della finestra con **X** la nasconde ma lascia PizziniMaker disponibile accanto all'orologio. Fare doppio clic sull'icona delle pizze per riaprirlo. Per chiudere completamente usare **Esci** nel menu dell'icona (tasto destro), che riporta anche **la versione installata** e i crediti (`PizziniMaker 1.4.0 · Energy Srl · Iacopo Preci · 2026`).
 
 Nelle impostazioni è possibile cambiare dipendente, data di inizio controllo, attività personalizzate, storico schede, tariffa €/km, modalità sempre in primo piano, avvio con Windows e controllo automatico degli aggiornamenti.
 

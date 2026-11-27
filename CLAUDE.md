@@ -48,6 +48,13 @@ Per provare l'app senza toccare dati reali: compilare con `-o <cartella temporan
 - **Nuova installazione**: al primo avvio si cerca una versione precedente e si importa tutto, preferenze ed `EmployeeId` compresi (`ImportOptions.ImportPreferences`).
 - **Multi-dipendente**: vedere `docs/ROADMAP.md` (cartella condivisa in LAN come prima scelta).
 
+## Decisioni prese (1.4.0) e motivazioni
+
+- **Consegna dei foglietti**: `WorkDay.DeliveredAt` + `DeliveredFingerprint` (impronta di `PrintSlipBuilder.GetFingerprint`). Lo stato (`PrintDelivery.GetStatus`) è calcolato confrontando l'impronta, così un giorno riaperto e modificato diventa «da ristampare» senza logica aggiuntiva; riconfermato senza modifiche torna consegnato. Impronta senza nome del dipendente e senza spunta cartacea (scelta: non richiedono ristampa).
+- Solo **Stampa…** segna la consegna (scelta dell'utente), non PDF/Word; le bozze non vengono mai segnate. Nessuna migrazione: i giorni esistenti risultano da stampare e si segnano a mano.
+- `MarkDelivered`/`ClearDelivered` non cambiano `LastModifiedAt`/`Revision`: la consegna non è una modifica del contenuto. Dopo la finestra Stampa, `MainViewModel.ReloadFromStore()` evita che il salvataggio automatico riscriva la copia in memoria senza contrassegno.
+- «Seleziona da stampare» agisce sul mese mostrato; i giorni da stampare negli altri mesi sono segnalati da un avviso.
+
 ## Da verificare
 
 - Resa delle finestre con scala dello schermo al 125% e 150% (provata solo al 100%).

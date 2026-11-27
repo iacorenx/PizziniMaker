@@ -2,10 +2,11 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Icon="/PizziniMaker;component/Assets/PizziniMaker.ico"
-        Title="Stampa giorni - PizziniMaker" Width="560" Height="640" MinWidth="440" MinHeight="520"
+        Title="Stampa giorni - PizziniMaker" Width="620" Height="780" MinWidth="480" MinHeight="600"
         WindowStartupLocation="CenterOwner" Background="#FFF9EF" FontFamily="Segoe UI" FontSize="13">
     <Grid Margin="18">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -13,9 +14,10 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock TextWrapping="Wrap" Foreground="#6C665B"
-                   Text="Spunta i giorni da stampare o esportare. Ogni giorno è un foglietto A6 con bordo tratteggiato: quattro per foglio A4 verticale."/>
+                   Text="Spunta i giorni da stampare o esportare. Ogni giorno è un foglietto A6 con bordo tratteggiato: quattro per foglio A4 verticale. Dopo la stampa i giorni confermati risultano consegnati."/>
         <Grid Grid.Row="1" Margin="0,12,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -27,7 +29,11 @@
                        VerticalAlignment="Center"/>
             <Button Grid.Column="2" Content="→" Width="32" Click="NextMonth_Click" ToolTip="Mese successivo"/>
         </Grid>
-        <UniformGrid Grid.Row="2" Columns="7" Margin="0,0,0,3">
+        <Border x:Name="OtherMonthsNotice" Grid.Row="2" Visibility="Collapsed" Margin="0,0,0,8" Padding="8,5" CornerRadius="3"
+                Background="#FFF0E5" BorderBrush="#D98555" BorderThickness="1">
+            <TextBlock x:Name="OtherMonthsText" TextWrapping="Wrap" Foreground="#A74716"/>
+        </Border>
+        <UniformGrid Grid.Row="3" Columns="7" Margin="0,0,0,3">
             <TextBlock Text="Lun" TextAlignment="Center" Foreground="#6C665B"/>
             <TextBlock Text="Mar" TextAlignment="Center" Foreground="#6C665B"/>
             <TextBlock Text="Mer" TextAlignment="Center" Foreground="#6C665B"/>
@@ -36,7 +42,7 @@
             <TextBlock Text="Sab" TextAlignment="Center" Foreground="#6C665B"/>
             <TextBlock Text="Dom" TextAlignment="Center" Foreground="#C62828"/>
         </UniformGrid>
-        <ItemsControl x:Name="DaysGrid" Grid.Row="3">
+        <ItemsControl x:Name="DaysGrid" Grid.Row="4">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid Columns="7" Rows="6"/>
@@ -51,21 +57,48 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding DayNumber}" FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="#6C665B"/>
+                                <TextBlock Text="{Binding Status}" FontSize="10" Foreground="{Binding StatusBrush}" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                         </CheckBox>
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <WrapPanel Grid.Row="4" Margin="0,8,0,0">
-            <Button Content="Seleziona confermati del mese" Click="SelectConfirmed_Click" Padding="10,4" Margin="0,0,6,4"/>
+        <WrapPanel Grid.Row="5" Margin="0,6,0,0">
+            <WrapPanel.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="Width" Value="12"/>
+                    <Setter Property="Height" Value="12"/>
+                    <Setter Property="BorderBrush" Value="#C9C3B6"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Setter Property="Margin" Value="0,0,4,0"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                </Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Margin" Value="0,0,12,2"/>
+                    <Setter Property="FontSize" Value="11"/>
+                    <Setter Property="Foreground" Value="#6C665B"/>
+                </Style>
+            </WrapPanel.Resources>
+            <Border Background="#DDF3DF"/><TextBlock Text="Da stampare"/>
+            <Border Background="#E4E8E3"/><TextBlock Text="Consegnato"/>
+            <Border Background="#FCE4D6"/><TextBlock Text="Modificato dopo la consegna"/>
+            <Border Background="#FFF8E7"/><TextBlock Text="Bozza"/>
+        </WrapPanel>
+        <WrapPanel Grid.Row="6" Margin="0,8,0,0">
+            <Button Content="Seleziona da stampare" Click="SelectToPrint_Click" Padding="10,4" Margin="0,0,6,4"
+                    ToolTip="Seleziona i giorni confermati del mese non ancora consegnati o modificati dopo la consegna"/>
             <Button Content="Deseleziona mese" Click="ClearMonth_Click" Padding="10,4" Margin="0,0,6,4"/>
             <Button Content="Deseleziona tutto" Click="ClearAll_Click" Padding="10,4" Margin="0,0,6,4"/>
+            <Button x:Name="MarkDeliveredButton" Content="Segna come consegnati" Click="MarkDelivered_Click" Padding="10,4" Margin="0,0,6,4"
+                    ToolTip="Segna i giorni confermati selezionati come consegnati, senza stamparli"/>
+            <Button x:Name="ClearDeliveredButton" Content="Togli consegnato" Click="ClearDelivered_Click" Padding="10,4" Margin="0,0,6,4"
+                    ToolTip="Toglie il contrassegno ai giorni selezionati (ad esempio se la stampa è andata persa)"/>
         </WrapPanel>
-        <Border Grid.Row="5" Margin="0,6,0,0" Background="#F3EEE3" BorderBrush="#D8CEBC" BorderThickness="1" Padding="10" CornerRadius="3">
+        <Border Grid.Row="7" Margin="0,6,0,0" Background="#F3EEE3" BorderBrush="#D8CEBC" BorderThickness="1" Padding="10" CornerRadius="3">
             <TextBlock x:Name="SelectionText" TextWrapping="Wrap"/>
         </Border>
-        <WrapPanel Grid.Row="6" HorizontalAlignment="Right" Margin="0,14,0,0">
+        <WrapPanel Grid.Row="8" HorizontalAlignment="Right" Margin="0,14,0,0">
             <Button x:Name="PreviewButton" Content="Anteprima" Click="Preview_Click" Padding="12,6" Margin="0,0,8,4"/>
             <Button x:Name="PdfButton" Content="Salva PDF…" Click="SavePdf_Click" Padding="12,6" Margin="0,0,8,4"/>
             <Button x:Name="WordButton" Content="Salva Word…" Click="SaveWord_Click" Padding="12,6" Margin="0,0,8,4"/>

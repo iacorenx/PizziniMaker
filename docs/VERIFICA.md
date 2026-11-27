@@ -1,7 +1,17 @@
-# Rapporto di verifica - PizziniMaker 1.3.0
+# Rapporto di verifica - PizziniMaker 1.4.0
 
-Data: 23/11/2026
+Data: 27/11/2026
 
+## Novità 1.4.0: giorni consegnati
+
+- **161 test xUnit superati** (153 della 1.3.0 + 8 nuovi in `DeliveryTests`), compilazione della soluzione senza errori né avvisi.
+- Test automatici: giornata 1.3.0 senza i nuovi campi letta come non consegnata; `MarkDelivered` non cambia revisione né data di modifica e ignora bozze e giorni inesistenti; modifica dopo la consegna (numero scheda, trasferta, riapertura) → da ristampare; riconferma senza modifiche → di nuovo consegnato; spunta cartacea e nome del dipendente non richiedono ristampa; `ClearDelivered`; `GetDaysToPrint`.
+- Interfaccia provata in una cartella temporanea con dati fittizi: calendario di stampa con stati *stampare*, *✓ dato*, *ristampa*, *bozza* e legenda; avviso arancio per i giorni da stampare in altri mesi; **Seleziona da stampare** spunta solo i confermati non consegnati; **Segna come consegnati** scrive `deliveredAt` e `deliveredFingerprint` e aggiorna calendario e riepilogo; nella finestra principale compare «✓ Consegnato il …» con **Togli consegnato**, e il contrassegno resta dopo la navigazione tra i giorni (nessuna sovrascrittura dal salvataggio automatico).
+- Non provati: stampa reale (il contrassegno dopo **Stampa…** usa lo stesso `MarkDelivered` provato sopra) e la conferma di **Togli consegnato** (finestra di messaggio).
+
+Le sezioni seguenti riportano la verifica completa della 1.3.0, ancora valida per le parti non modificate.
+
+# Verifica 1.3.0 (23/11/2026)
 ## Ambiente
 
 - Windows 10, versione sistema 10.0.19045, scala dello schermo al 100%.

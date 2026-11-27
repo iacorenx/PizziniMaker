@@ -2,7 +2,7 @@
 
 PizziniMaker è un'applicazione desktop portabile per Windows 10 e Windows 11 destinata alla registrazione giornaliera delle ore lavorative. Riprende l'organizzazione e l'aspetto di un piccolo foglio di carta A6 e consente di acquisire, conservare ed esportare le attività svolte.
 
-> **Stato del progetto:** versione 1.3.0 implementata, con attività MANDATO e PREVENTIVO, note spese con allegati e chilometri, stampa/PDF/Word dei giorni in foglietti A6, aggiornamento da GitHub dal menu dell'icona, importazione automatica alla prima installazione, commenti e storico con suggerimenti, ore di viaggio separate, sabato facoltativo, trasferta, attività personalizzate, chiusura a 8 ore, calendario mensile, festività nazionali e test automatici. Evoluzione multi-dipendente: [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Stato del progetto:** versione 1.4.0 implementata, con giorni stampati segnati come consegnati, attività MANDATO e PREVENTIVO, note spese con allegati e chilometri, stampa/PDF/Word dei giorni in foglietti A6, aggiornamento da GitHub dal menu dell'icona, importazione automatica alla prima installazione, commenti e storico con suggerimenti, ore di viaggio separate, sabato facoltativo, trasferta, attività personalizzate, chiusura a 8 ore, calendario mensile, festività nazionali e test automatici. Evoluzione multi-dipendente: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Obiettivi
 
@@ -141,6 +141,7 @@ Non vengono mostrati avvisi di incompletezza.
 - Ogni giorno è un foglietto A6 (105 × 148,5 mm) con bordo tratteggiato rientrato di 3 mm, quattro per A4 verticale.
 - Intestazione con nome del dipendente in alto a sinistra e data `GG/MM/AAAA` in alto a destra; elenco attività in 12 pt; quadratino con **V** per le attività registrate su carta, vuoto per quelle non registrate; totale e indicazione BOZZA per i giorni non confermati.
 - Stessa disposizione per stampa (WPF), PDF (PDFsharp 6.2.4, licenza MIT) e Word `.docx` (Open XML SDK, licenza MIT).
+- **Consegna (dalla 1.4.0):** dopo **Stampa…** i giorni confermati stampati risultano consegnati all'addetta (data e impronta del foglietto salvate nella giornata, campi `deliveredAt` e `deliveredFingerprint`). Il calendario di stampa distingue da stampare, consegnato, modificato dopo la consegna (da ristampare) e bozza; **Seleziona da stampare** spunta i giorni confermati del mese non ancora consegnati o modificati; un avviso segnala i giorni da stampare in altri mesi. Il contrassegno si mette o si toglie a mano dalla finestra di stampa o sotto lo stato di conferma del giorno. PDF e Word non segnano la consegna; le bozze non vengono mai segnate. Cambiare il nome del dipendente o la spunta della scheda cartacea non richiede una ristampa.
 
 ### Importazione da una versione precedente
 
